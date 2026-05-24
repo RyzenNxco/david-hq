@@ -2,10 +2,10 @@ import type { VentaCategoria, VentaPago, VentaProducto } from "@/lib/commissions
 import type { NotionPage } from "./types";
 import { notionFetch } from "./client";
 import {
-  getDate,
+  getDateByNames,
   getMontoFromProps,
   getRichText,
-  getSelect,
+  getSelectByNames,
   getTitle,
   getUrl,
   mapNotionPago,
@@ -32,6 +32,12 @@ export type VentaSync = {
   needsCompletion: boolean;
 };
 
+export type IgnoreStats = {
+  porCargarOFaltaDatos: number;
+  sinFecha: number;
+  sinTipo: number;
+};
+
 type QueryResponse = {
   results: NotionPage[];
   has_more: boolean;
@@ -44,7 +50,10 @@ function lastDayOfMonth(monthKey: string) {
   return `${monthKey}-${String(last).padStart(2, "0")}`;
 }
 
-function parsePage(page: NotionPage): VentaSync | null {
+function parsePage(
+  page: NotionPage,
+  stats: IgnoreStats,
+): VentaSync | null {
   const props = page.properties;
   let cliente = getTitle(props);
   const datos = getRichText(props["datos"]);
@@ -55,25 +64,54 @@ function parsePage(page: NotionPage): VentaSync | null {
   }
   if (!cliente) cliente = `Cliente ${page.id.slice(-4)}`;
 
-  const estado = getSelect(props["Estado"]);
-  if (shouldIgnoreNotion(estado)) return null;
+  const estado = getSelectByNames(props, ["Estado", "ESTADO", "Status"]);
+  if (shouldIgnoreNotion(estado)) {
+    stats.porCargarOFaltaDatos++;
+    return null;
+  }
 
-  let fecha = getDate(props["Fecha"]);
+  let fecha = getDateByNames(props, [
+    "Fecha",
+    "FECHA",
+    "Fecha de pago",
+    "FECHA DE PAGO",
+  ]);
   if (fecha && fecha.length > 10) fecha = fecha.slice(0, 10);
   if (!fecha && page.created_time) fecha = page.created_time.slice(0, 10);
-  if (!fecha) return null;
+  if (!fecha) {
+    stats.sinFecha++;
+    return null;
+  }
 
-  let fechaCompletarPago = getDate(props["DIA A COMPLETAR PAGO"]);
+  let fechaCompletarPago = getDateByNames(props, [
+    "DIA A COMPLETAR PAGO",
+    "Día a completar pago",
+    "Fecha completar pago",
+  ]);
   if (fechaCompletarPago && fechaCompletarPago.length > 10) {
     fechaCompletarPago = fechaCompletarPago.slice(0, 10);
   }
 
-  const tipo = getSelect(props["TIPO"]);
-  const tipoDePago = getSelect(props["TIPO DE PAGO"]);
-  const funnel = getSelect(props["Funnel"]);
+  const tipo = getSelectByNames(props, [
+    "TIPO",
+    "Tipo",
+    "Adquisición",
+    "ADQUISICION",
+    "Adquisicion",
+  ]);
+  const tipoDePago = getSelectByNames(props, [
+    "TIPO DE PAGO",
+    "Tipo de pago",
+    "FORMA DE PAGO",
+    "Forma de pago",
+  ]);
+  const funnel = getSelectByNames(props, ["Funnel", "FUNNEL"]);
 
   const categoria = mapNotionTipo(tipo);
-  if (!categoria) return null;
+  if (!categoria) {
+    stats.sinTipo++;
+    return null;
+  }
 
   const producto = mapNotionProd(funnel, tipoDePago);
   let pago = mapNotionPago(tipoDePago, estado);
@@ -90,7 +128,7 @@ function parsePage(page: NotionPage): VentaSync | null {
     categoria,
     pago,
     producto,
-    linkManyChat: getUrl(props["URL MANY"]),
+    linkManyChat: getUrl(props["URL MANY"]) || getUrl(props["URL ManyChat"]),
     notionEstado: estado,
     notionTipo: tipo,
     notionTipoDePago: tipoDePago,
@@ -104,6 +142,7 @@ function parsePage(page: NotionPage): VentaSync | null {
 export async function fetchVentasFromNotion(month?: string): Promise<{
   ventas: VentaSync[];
   ignored: number;
+  stats: IgnoreStats;
 }> {
   const { getNotionConfig } = await import("./client");
   const { databaseId } = getNotionConfig();
@@ -122,7 +161,11 @@ export async function fetchVentasFromNotion(month?: string): Promise<{
       : {};
 
   const ventas: VentaSync[] = [];
-  let ignored = 0;
+  const stats: IgnoreStats = {
+    porCargarOFaltaDatos: 0,
+    sinFecha: 0,
+    sinTipo: 0,
+  };
   let cursor: string | undefined;
   let hasMore = true;
 
@@ -140,15 +183,16 @@ export async function fetchVentasFromNotion(month?: string): Promise<{
 
     for (const page of res.results) {
       if (!("properties" in page)) continue;
-      const parsed = parsePage(page);
+      const parsed = parsePage(page, stats);
       if (parsed) ventas.push(parsed);
-      else ignored++;
     }
 
     hasMore = res.has_more;
     cursor = res.next_cursor ?? undefined;
   }
 
+  const ignored = stats.porCargarOFaltaDatos + stats.sinFecha + stats.sinTipo;
+
   ventas.sort((a, b) => b.fecha.localeCompare(a.fecha));
-  return { ventas, ignored };
+  return { ventas, ignored, stats };
 }

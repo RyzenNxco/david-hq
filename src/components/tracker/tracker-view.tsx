@@ -60,6 +60,11 @@ export function TrackerView() {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ignored, setIgnored] = useState(0);
+  const [ignoreStats, setIgnoreStats] = useState<{
+    porCargarOFaltaDatos: number;
+    sinFecha: number;
+    sinTipo: number;
+  } | null>(null);
   const [overrideVersion, setOverrideVersion] = useState(0);
   const [modalId, setModalId] = useState<string | null>(null);
   const [form, setForm] = useState<VentaOverride>({
@@ -77,6 +82,7 @@ export function TrackerView() {
       if (!res.ok) throw new Error(data.error ?? "Error de sync");
       setVentas(data.ventas);
       setIgnored(data.ignored ?? 0);
+      setIgnoreStats(data.stats ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al sincronizar");
     } finally {
@@ -172,9 +178,10 @@ export function TrackerView() {
         <div className="glass rounded-xl p-4">
           <p className="text-xs text-muted">Pendientes de completar</p>
           <p className="mt-1 text-2xl font-bold text-warning">{pending}</p>
-          {ignored > 0 ? (
+          {ignored > 0 && ignoreStats ? (
             <p className="mt-1 text-[11px] text-muted">
-              {ignored} ignoradas (POR CARGAR / FALTA DATOS / sin TIPO o fecha)
+              {ignoreStats.porCargarOFaltaDatos} por cargar · {ignoreStats.sinTipo} sin TIPO ·{" "}
+              {ignoreStats.sinFecha} sin fecha
             </p>
           ) : null}
         </div>

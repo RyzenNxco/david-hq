@@ -7,11 +7,12 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month") ?? undefined;
 
-    const { ventas, ignored } = await fetchVentasFromNotion(month ?? undefined);
+    const { ventas, ignored, stats } = await fetchVentasFromNotion(month ?? undefined);
 
     return NextResponse.json({
       ventas,
       ignored,
+      stats,
       syncedAt: new Date().toISOString(),
     });
   } catch (error) {

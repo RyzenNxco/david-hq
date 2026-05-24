@@ -16,13 +16,59 @@ export function getRichText(prop: NotionProperty | undefined): string {
 }
 
 export function getSelect(prop: NotionProperty | undefined): string {
-  if (!prop || prop.type !== "select" || !("select" in prop)) return "";
-  return prop.select?.name ?? "";
+  if (!prop) return "";
+  if (prop.type === "select" && "select" in prop) {
+    return prop.select?.name ?? "";
+  }
+  if (prop.type === "multi_select" && "multi_select" in prop) {
+    return prop.multi_select[0]?.name ?? "";
+  }
+  if (prop.type === "status" && "status" in prop) {
+    return prop.status?.name ?? "";
+  }
+  return "";
+}
+
+/** Busca propiedad por nombre exacto o similar (case-insensitive) */
+export function getSelectByNames(
+  props: Record<string, NotionProperty>,
+  names: string[],
+): string {
+  for (const name of names) {
+    const v = getSelect(props[name]);
+    if (v) return v;
+  }
+  const lower = names.map((n) => n.toLowerCase());
+  for (const [key, prop] of Object.entries(props)) {
+    if (lower.includes(key.toLowerCase())) {
+      const v = getSelect(prop);
+      if (v) return v;
+    }
+  }
+  return "";
 }
 
 export function getDate(prop: NotionProperty | undefined): string | null {
   if (!prop || prop.type !== "date" || !("date" in prop)) return null;
   return prop.date?.start ?? null;
+}
+
+export function getDateByNames(
+  props: Record<string, NotionProperty>,
+  names: string[],
+): string | null {
+  for (const name of names) {
+    const d = getDate(props[name]);
+    if (d) return d;
+  }
+  const lower = names.map((n) => n.toLowerCase());
+  for (const [key, prop] of Object.entries(props)) {
+    if (lower.includes(key.toLowerCase())) {
+      const d = getDate(prop);
+      if (d) return d;
+    }
+  }
+  return null;
 }
 
 export function getUrl(prop: NotionProperty | undefined): string {
@@ -35,7 +81,6 @@ export function getNumber(prop: NotionProperty | undefined): number | null {
   return prop.number;
 }
 
-/** Normaliza para comparar sin depender de emojis/espacios raros */
 function norm(s: string) {
   return s
     .normalize("NFD")
@@ -44,7 +89,6 @@ function norm(s: string) {
     .trim();
 }
 
-/** No bajar al tracker */
 export function shouldIgnoreNotion(estado: string): boolean {
   const e = norm(estado);
   if (!e) return false;
@@ -53,18 +97,12 @@ export function shouldIgnoreNotion(estado: string): boolean {
 
 export function mapNotionTipo(tipo: string): "clase" | "seguimiento" | null {
   const t = norm(tipo);
-  if (t === "CLASE") return "clase";
-  if (t === "SEGUIMIENTO") return "seguimiento";
+  if (t.includes("CLASE")) return "clase";
+  if (t.includes("SEGUIMIENTO")) return "seguimiento";
   return null;
 }
 
-/**
- * Prioridad: campo "TIPO DE PAGO", luego "Estado".
- */
-export function mapNotionPago(
-  tipoDePago: string,
-  estado: string,
-): VentaPago {
+export function mapNotionPago(tipoDePago: string, estado: string): VentaPago {
   const tp = norm(tipoDePago);
   if (tp.includes("SEÑA") || tp.includes("SENA")) return "sena";
   if (tp === "PAYFULL" || tp.includes("PAY FULL") || tp.includes("PAYFULL")) {
@@ -77,7 +115,7 @@ export function mapNotionPago(
   if (
     e.includes("COMPLETA PAGO") ||
     e.includes("SANTI") ||
-    e.includes("CARGADA")
+    (e.includes("CARGADA") && !e.includes("SEÑA") && !e.includes("SENA"))
   ) {
     return "payfull";
   }
@@ -111,6 +149,10 @@ export function getMontoFromProps(
 ): number | null {
   for (const key of MONTO_KEYS) {
     const n = getNumber(props[key]);
+    if (n != null && n > 0) return n;
+  }
+  for (const [, prop] of Object.entries(props)) {
+    const n = getNumber(prop);
     if (n != null && n > 0) return n;
   }
   return null;
