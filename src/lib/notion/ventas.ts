@@ -108,10 +108,10 @@ function parsePage(
   ]);
   const funnel = getSelectByNames(props, ["Funnel", "FUNNEL"]);
 
-  const categoria = mapNotionTipo(tipo);
+  let categoria = mapNotionTipo(tipo);
   if (!categoria) {
-    stats.sinTipo++;
-    return null;
+    // Muchas filas antiguas no tienen ADQUISICION — default seguimiento si el estado es válido
+    categoria = "seguimiento";
   }
 
   const producto = mapNotionProd(funnel, tipoDePago);
