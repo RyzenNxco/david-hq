@@ -57,8 +57,14 @@ export async function POST(request: Request) {
 
     const properties: Record<string, unknown> = {
       Nombre: { title: [{ text: { content: nombre } }] },
-      TIPO: { select: { name: body.tipo || "SEGUIMIENTO" } },
-      Estado: { select: { name: body.estado || "ACCESOS ✅ POR CARGAR ❌" } },
+      ADQUISICION: { select: { name: body.tipo || "SEGUIMIENTO" } },
+      "TIPO DE PAGO": {
+        select: { name: body.tipoDePago || "SEÑA" },
+      },
+      // Columna "Estado" sin nombre visible en Notion
+      "": {
+        select: { name: body.estado || "ACCESOS ✅ POR CARGAR ❌" },
+      },
     };
 
     if (body.fecha) properties.Fecha = { date: { start: body.fecha } };

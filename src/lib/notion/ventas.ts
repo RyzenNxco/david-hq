@@ -3,6 +3,7 @@ import type { NotionPage } from "./types";
 import { notionFetch } from "./client";
 import {
   getDateByNames,
+  getEstadoFromProps,
   getMontoFromProps,
   getRichText,
   getSelectByNames,
@@ -64,7 +65,7 @@ function parsePage(
   }
   if (!cliente) cliente = `Cliente ${page.id.slice(-4)}`;
 
-  const estado = getSelectByNames(props, ["Estado", "ESTADO", "Status"]);
+  const estado = getEstadoFromProps(props);
   if (shouldIgnoreNotion(estado)) {
     stats.porCargarOFaltaDatos++;
     return null;
@@ -93,11 +94,11 @@ function parsePage(
   }
 
   const tipo = getSelectByNames(props, [
+    "ADQUISICION",
+    "Adquisición",
+    "ADQUISICIÓN",
     "TIPO",
     "Tipo",
-    "Adquisición",
-    "ADQUISICION",
-    "Adquisicion",
   ]);
   const tipoDePago = getSelectByNames(props, [
     "TIPO DE PAGO",

@@ -89,6 +89,39 @@ function norm(s: string) {
     .trim();
 }
 
+/** Campo "Estado" en Notion a veces no tiene nombre en el schema */
+export function getEstadoFromProps(
+  props: Record<string, NotionProperty>,
+): string {
+  const direct = getSelectByNames(props, ["Estado", "ESTADO", "Status"]);
+  if (direct) return direct;
+
+  for (const prop of Object.values(props)) {
+    if (
+      prop.type !== "select" &&
+      prop.type !== "status" &&
+      prop.type !== "multi_select"
+    ) {
+      continue;
+    }
+    const v = getSelect(prop);
+    if (!v) continue;
+    const e = norm(v);
+    if (
+      e.includes("CARGAR") ||
+      e.includes("CARGADA") ||
+      e.includes("PAGO") ||
+      e.includes("SEÑA") ||
+      e.includes("SENA") ||
+      e.includes("SANTI") ||
+      e.includes("FALTA DATOS")
+    ) {
+      return v;
+    }
+  }
+  return "";
+}
+
 export function shouldIgnoreNotion(estado: string): boolean {
   const e = norm(estado);
   if (!e) return false;
