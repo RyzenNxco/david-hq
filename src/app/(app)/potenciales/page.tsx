@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
-import { PlaceholderSection } from "@/components/ui/placeholder-section";
+import { KanbanBoard } from "@/components/potenciales/kanban-board";
 
 export default function PotencialesPage() {
   return (
@@ -7,7 +7,7 @@ export default function PotencialesPage() {
       title="Potenciales"
       description="Kanban del funnel — datos desde Supabase"
     >
-      <PlaceholderSection message="Tablero Kanban con 5 columnas, drag & drop, semáforo de contacto y link a ManyChat." />
+      <KanbanBoard />
     </AppShell>
   );
 }

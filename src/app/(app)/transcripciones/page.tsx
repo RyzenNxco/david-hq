@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
-import { PlaceholderSection } from "@/components/ui/placeholder-section";
+import { TranscripcionesList } from "@/components/transcripciones/transcripciones-list";
 
 export default function TranscripcionesPage() {
   return (
@@ -7,7 +7,7 @@ export default function TranscripcionesPage() {
       title="Transcripciones"
       description="Gestión de transcripciones vinculadas a leads"
     >
-      <PlaceholderSection message="Lista de transcripciones con vínculo a leads y accesos rápidos al Tracker y Potenciales." />
+      <TranscripcionesList />
     </AppShell>
   );
 }
