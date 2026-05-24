@@ -26,17 +26,18 @@ type VentaRow = VentaSync & {
 function mergeVentas(ventas: VentaSync[], overrides: Record<string, VentaOverride>): VentaRow[] {
   return ventas.map((v) => {
     const override = overrides[v.notionId];
-    const needsCompletion = !override || !override.monto || override.monto <= 0;
+    const monto = override?.monto ?? v.montoNotion ?? 0;
+    const needsCompletion = monto <= 0;
 
     if (needsCompletion) {
       return { ...v, override, comision: 0, montoDisplay: 0, needsCompletion: true };
     }
 
     const calc = calcCommission({
-      moneda: override.moneda,
-      monto: override.monto,
-      cotiz: override.cotiz,
-      ticketUsdIn: override.ticketUsd,
+      moneda: override?.moneda ?? "ARS",
+      monto,
+      cotiz: override?.cotiz ?? 1430,
+      ticketUsdIn: override?.ticketUsd ?? (v.producto === "downsell" ? 55 : 197),
       cat: v.categoria,
       pago: v.pago,
       prod: v.producto,
@@ -46,7 +47,7 @@ function mergeVentas(ventas: VentaSync[], overrides: Record<string, VentaOverrid
       ...v,
       override,
       comision: calc.comision,
-      montoDisplay: override.monto,
+      montoDisplay: monto,
       needsCompletion: false,
     };
   });
@@ -102,7 +103,7 @@ export function TrackerView() {
     setForm(
       ov ?? {
         moneda: "ARS",
-        monto: 0,
+        monto: v?.montoNotion ?? 0,
         cotiz: 1430,
         ticketUsd: v?.producto === "downsell" ? 55 : 197,
       },
@@ -172,7 +173,9 @@ export function TrackerView() {
           <p className="text-xs text-muted">Pendientes de completar</p>
           <p className="mt-1 text-2xl font-bold text-warning">{pending}</p>
           {ignored > 0 ? (
-            <p className="mt-1 text-[11px] text-muted">{ignored} ignoradas en Notion</p>
+            <p className="mt-1 text-[11px] text-muted">
+              {ignored} ignoradas (POR CARGAR / FALTA DATOS / sin TIPO o fecha)
+            </p>
           ) : null}
         </div>
       </div>

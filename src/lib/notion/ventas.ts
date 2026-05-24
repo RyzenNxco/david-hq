@@ -3,13 +3,15 @@ import type { NotionPage } from "./types";
 import { notionFetch } from "./client";
 import {
   getDate,
+  getMontoFromProps,
   getRichText,
   getSelect,
   getTitle,
   getUrl,
-  mapNotionEstado,
+  mapNotionPago,
   mapNotionProd,
   mapNotionTipo,
+  shouldIgnoreNotion,
 } from "./properties";
 
 export type VentaSync = {
@@ -23,8 +25,10 @@ export type VentaSync = {
   linkManyChat: string;
   notionEstado: string;
   notionTipo: string;
+  notionTipoDePago: string;
   notionFunnel: string;
   notionDatos: string;
+  montoNotion: number | null;
   needsCompletion: boolean;
 };
 
@@ -33,6 +37,12 @@ type QueryResponse = {
   has_more: boolean;
   next_cursor: string | null;
 };
+
+function lastDayOfMonth(monthKey: string) {
+  const [y, m] = monthKey.split("-").map(Number);
+  const last = new Date(y, m, 0).getDate();
+  return `${monthKey}-${String(last).padStart(2, "0")}`;
+}
 
 function parsePage(page: NotionPage): VentaSync | null {
   const props = page.properties;
@@ -45,9 +55,13 @@ function parsePage(page: NotionPage): VentaSync | null {
   }
   if (!cliente) cliente = `Cliente ${page.id.slice(-4)}`;
 
+  const estado = getSelect(props["Estado"]);
+  if (shouldIgnoreNotion(estado)) return null;
+
   let fecha = getDate(props["Fecha"]);
   if (fecha && fecha.length > 10) fecha = fecha.slice(0, 10);
   if (!fecha && page.created_time) fecha = page.created_time.slice(0, 10);
+  if (!fecha) return null;
 
   let fechaCompletarPago = getDate(props["DIA A COMPLETAR PAGO"]);
   if (fechaCompletarPago && fechaCompletarPago.length > 10) {
@@ -55,16 +69,18 @@ function parsePage(page: NotionPage): VentaSync | null {
   }
 
   const tipo = getSelect(props["TIPO"]);
-  const estado = getSelect(props["Estado"]);
+  const tipoDePago = getSelect(props["TIPO DE PAGO"]);
   const funnel = getSelect(props["Funnel"]);
 
   const categoria = mapNotionTipo(tipo);
-  const pagoRaw = mapNotionEstado(estado);
-  if (!fecha || !categoria || !pagoRaw) return null;
+  if (!categoria) return null;
 
-  const producto = mapNotionProd(funnel);
-  const pago: VentaPago =
-    producto === "downsell" && pagoRaw === "payfull" ? "downsell" : pagoRaw;
+  const producto = mapNotionProd(funnel, tipoDePago);
+  let pago = mapNotionPago(tipoDePago, estado);
+  if (producto === "downsell" && pago === "payfull") pago = "downsell";
+
+  const montoNotion = getMontoFromProps(props);
+  const needsCompletion = montoNotion == null || montoNotion <= 0;
 
   return {
     notionId: page.id,
@@ -77,9 +93,11 @@ function parsePage(page: NotionPage): VentaSync | null {
     linkManyChat: getUrl(props["URL MANY"]),
     notionEstado: estado,
     notionTipo: tipo,
+    notionTipoDePago: tipoDePago,
     notionFunnel: funnel,
     notionDatos: datos,
-    needsCompletion: true,
+    montoNotion,
+    needsCompletion,
   };
 }
 
@@ -97,7 +115,7 @@ export async function fetchVentasFromNotion(month?: string): Promise<{
             property: "Fecha",
             date: {
               on_or_after: `${month}-01`,
-              on_or_before: `${month}-31`,
+              on_or_before: lastDayOfMonth(month),
             },
           },
         }
