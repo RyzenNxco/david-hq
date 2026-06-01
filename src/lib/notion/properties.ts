@@ -81,6 +81,30 @@ export function getNumber(prop: NotionProperty | undefined): number | null {
   return prop.number;
 }
 
+export function getCheckboxValue(prop: NotionProperty | undefined): boolean {
+  if (!prop || prop.type !== "checkbox" || !("checkbox" in prop)) return false;
+  return prop.checkbox;
+}
+
+export function getCheckbox(
+  props: Record<string, NotionProperty>,
+  names: string[],
+): boolean {
+  for (const name of names) {
+    const prop = props[name];
+    if (prop && prop.type === "checkbox") {
+      return getCheckboxValue(prop);
+    }
+  }
+  const lower = names.map((n) => n.toLowerCase());
+  for (const [key, prop] of Object.entries(props)) {
+    if (lower.includes(key.toLowerCase()) && prop.type === "checkbox") {
+      return getCheckboxValue(prop);
+    }
+  }
+  return false;
+}
+
 function norm(s: string) {
   return s
     .normalize("NFD")
@@ -177,6 +201,16 @@ const MONTO_KEYS = [
   "Importe",
 ];
 
+const MONTO_COBRADO_KEYS = [
+  "MONTO COBRADO",
+  "Monto cobrado",
+  "COBRADO",
+  "Cobrado",
+  "PAGO RECIBIDO",
+  "Pago recibido",
+  ...MONTO_KEYS,
+];
+
 export function getMontoFromProps(
   props: Record<string, NotionProperty>,
 ): number | null {
@@ -186,6 +220,16 @@ export function getMontoFromProps(
   }
   for (const [, prop] of Object.entries(props)) {
     const n = getNumber(prop);
+    if (n != null && n > 0) return n;
+  }
+  return null;
+}
+
+export function getMontoCobradoFromProps(
+  props: Record<string, NotionProperty>,
+): number | null {
+  for (const key of MONTO_COBRADO_KEYS) {
+    const n = getNumber(props[key]);
     if (n != null && n > 0) return n;
   }
   return null;

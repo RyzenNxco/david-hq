@@ -2,9 +2,11 @@ import type { VentaCategoria, VentaPago, VentaProducto } from "@/lib/commissions
 import type { NotionPage } from "./types";
 import { notionFetch } from "./client";
 import {
+  getCheckbox,
   getDateByNames,
   getEstadoFromProps,
   getMontoFromProps,
+  getMontoCobradoFromProps,
   getRichText,
   getSelectByNames,
   getTitle,
@@ -20,6 +22,9 @@ export type VentaSync = {
   cliente: string;
   fecha: string;
   fechaCompletarPago: string | null;
+  fechaFup: string | null;
+  completoPago: boolean;
+  montoCobrado: number | null;
   categoria: VentaCategoria;
   pago: VentaPago;
   producto: VentaProducto;
@@ -93,6 +98,32 @@ function parsePage(
     fechaCompletarPago = fechaCompletarPago.slice(0, 10);
   }
 
+  // FUP (Follow-up date)
+  let fechaFup = getDateByNames(props, [
+    "FUP",
+    "Fup",
+    "FOLLOW UP",
+    "Follow up",
+    "Seguimiento",
+    "SEGUIMIENTO",
+  ]);
+  if (fechaFup && fechaFup.length > 10) {
+    fechaFup = fechaFup.slice(0, 10);
+  }
+
+  // COMPLETO PAGÓ (checkbox indicating if payment was completed)
+  const completoPago = getCheckbox(props, [
+    "COMPLETO PAGÓ",
+    "Completo pagó",
+    "COMPLETO PAGO",
+    "Completo pago",
+    "Pagó completo",
+    "PAGO COMPLETO",
+  ]);
+
+  // Monto cobrado
+  const montoCobrado = getMontoCobradoFromProps(props);
+
   const tipo = getSelectByNames(props, [
     "ADQUISICION",
     "Adquisición",
@@ -126,6 +157,9 @@ function parsePage(
     cliente,
     fecha,
     fechaCompletarPago,
+    fechaFup,
+    completoPago,
+    montoCobrado,
     categoria,
     pago,
     producto,
