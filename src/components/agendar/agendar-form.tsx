@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ETAPAS } from "@/lib/leads";
+import { ETAPAS, formatContacto } from "@/lib/leads";
 
 type Props = {
   initialUrl?: string;
@@ -9,11 +9,44 @@ type Props = {
   isPotencial?: boolean;
 };
 
+// Redondea una fecha a la media hora más cercana (segundos a 0).
+function roundToHalfHour(date: Date): Date {
+  const d = new Date(date);
+  d.setSeconds(0, 0);
+  d.setMinutes(Math.round(d.getMinutes() / 30) * 30);
+  return d;
+}
+
+// Formatea un Date como valor para <input type="datetime-local"> en hora local
+// ("YYYY-MM-DDTHH:mm"). No usamos toISOString para no convertir a UTC.
+function toDatetimeLocal(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+// Botones rápidos: cada uno setea el campo a (ahora + X) en milisegundos.
+const H = 3600_000;
+const QUICK_CONTACTO = [
+  { label: "+1h", ms: 1 * H },
+  { label: "+2h", ms: 2 * H },
+  { label: "+6h", ms: 6 * H },
+  { label: "+8h", ms: 8 * H },
+  { label: "+12h", ms: 12 * H },
+  { label: "+24h", ms: 24 * H },
+  { label: "+2 días", ms: 48 * H },
+  { label: "+7 días", ms: 7 * 24 * H },
+] as const;
+
 export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = false }: Props) {
   const [mode, setMode] = useState<"venta" | "potencial">(isPotencial ? "potencial" : "venta");
   const [nombre, setNombre] = useState(initialName ? decodeURIComponent(initialName) : "");
   const [url, setUrl] = useState(initialUrl ? decodeURIComponent(initialUrl) : "");
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
+  // Próximo contacto (modo potencial): fecha + hora. Por defecto, ahora redondeado
+  // a la media hora más cercana. Formato datetime-local "YYYY-MM-DDTHH:mm".
+  const [fechaContacto, setFechaContacto] = useState(() =>
+    toDatetimeLocal(roundToHalfHour(new Date())),
+  );
   const [fechaCompletar, setFechaCompletar] = useState("");
   const [notas, setNotas] = useState("");
   const [tipo, setTipo] = useState("SEGUIMIENTO");
@@ -25,6 +58,10 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
   const guardar = async () => {
     if (!nombre.trim()) {
       setMessage({ type: "err", text: "Falta el nombre" });
+      return;
+    }
+    if (mode === "potencial" && !fechaContacto) {
+      setMessage({ type: "err", text: "Elegí fecha y hora de contacto" });
       return;
     }
     setLoading(true);
@@ -54,7 +91,8 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
           body: JSON.stringify({
             nombre: nombre.trim(),
             etapa,
-            fecha_proximo_contacto: fecha || null,
+            // Timestamp ISO con hora (ej: "2026-06-06T15:30:00").
+            fecha_proximo_contacto: fechaContacto ? `${fechaContacto}:00` : null,
             fecha_completar_pago: fechaCompletar || null,
             url_manychat: url || null,
             notas: notas || null,
@@ -110,15 +148,47 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
             className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
           />
         </div>
-        <div>
-          <label className="text-xs text-muted">Fecha {mode === "venta" ? "de pago" : "próximo contacto"}</label>
-          <input
-            type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
-          />
-        </div>
+        {mode === "venta" ? (
+          <div>
+            <label className="text-xs text-muted">Fecha de pago</label>
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
+            />
+          </div>
+        ) : (
+          <div>
+            <label className="text-xs text-muted">Próximo contacto (fecha y hora)</label>
+            {/* Botones rápidos: 1 toque = ahora + X */}
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {QUICK_CONTACTO.map((q) => (
+                <button
+                  key={q.label}
+                  type="button"
+                  onClick={() => setFechaContacto(toDatetimeLocal(new Date(Date.now() + q.ms)))}
+                  className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-muted hover:border-accent/50 hover:text-foreground"
+                >
+                  {q.label}
+                </button>
+              ))}
+            </div>
+            <input
+              type="datetime-local"
+              value={fechaContacto}
+              onChange={(e) => setFechaContacto(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
+            />
+            {fechaContacto ? (
+              <p className="mt-1 text-xs text-muted">
+                📅 {formatContacto(fechaContacto)}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-danger">Elegí fecha y hora de contacto</p>
+            )}
+          </div>
+        )}
         <div>
           <label className="text-xs text-muted">Fecha completar pago</label>
           <input
@@ -186,7 +256,7 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
         <button
           type="button"
           onClick={guardar}
-          disabled={loading}
+          disabled={loading || (mode === "potencial" && !fechaContacto)}
           className="w-full rounded-lg bg-accent py-3 text-sm font-semibold text-background disabled:opacity-50"
         >
           {loading ? "Guardando…" : mode === "venta" ? "Guardar en Notion" : "Guardar en Supabase"}
