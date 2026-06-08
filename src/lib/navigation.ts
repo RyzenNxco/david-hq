@@ -1,6 +1,7 @@
 import {
   CalendarPlus,
   ClipboardList,
+  FileText,
   Kanban,
   LayoutDashboard,
   Mic,
@@ -38,6 +39,12 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/agendar",
     icon: CalendarPlus,
     description: "Registrar leads desde ManyChat",
+  },
+  {
+    label: "Plantillas",
+    href: "/plantillas",
+    icon: FileText,
+    description: "Textos rápidos para copiar y pegar",
   },
   {
     label: "Transcripciones",
