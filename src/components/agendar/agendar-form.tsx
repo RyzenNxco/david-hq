@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ETAPAS, formatContacto } from "@/lib/leads";
 
 type Props = {
@@ -54,6 +54,22 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
   const [etapa, setEtapa] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  // Pre-carga desde la URL al montar (una sola vez): ?name, ?url, ?mode=pot.
+  // Si un parámetro no viene, ese campo queda como está (vacío).
+  // No toca fechaContacto (precarga de fecha+hora) ni las validaciones.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const n = params.get("name");
+    const u = params.get("url");
+    const m = params.get("mode");
+    if (n) setNombre(decodeURIComponent(n));
+    if (u) setUrl(decodeURIComponent(u));
+    // mode=pot → "potencial"; cualquier otro caso (o ausente) → "venta".
+    setMode(m === "pot" ? "potencial" : "venta");
+    // Solo al montar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const guardar = async () => {
     if (!nombre.trim()) {
