@@ -1,10 +1,12 @@
 import {
   CalendarPlus,
   ClipboardList,
+  Database,
   FileText,
   Kanban,
   LayoutDashboard,
   Mic,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 
@@ -51,5 +53,17 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/transcripciones",
     icon: Mic,
     description: "Transcripciones vinculadas a leads",
+  },
+  {
+    label: "ManyChat Sync",
+    href: "/sync",
+    icon: RefreshCw,
+    description: "Sincronizar etiquetas, plantillas y automatizaciones",
+  },
+  {
+    label: "Base de Datos",
+    href: "/datos",
+    icon: Database,
+    description: "Plantillas, etiquetas y automatizaciones de ManyChat",
   },
 ];

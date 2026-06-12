@@ -61,8 +61,8 @@ export async function POST(request: Request) {
       "TIPO DE PAGO": {
         select: { name: body.tipoDePago || "SEÑA" },
       },
-      // Columna "Estado" sin nombre visible en Notion
-      "": {
+      // "TIPO" es la columna ESTADO en el Notion de VENTAS (no "Estado" ni "").
+      TIPO: {
         select: { name: body.estado || "ACCESOS ✅ POR CARGAR ❌" },
       },
     };

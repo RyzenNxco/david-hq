@@ -48,8 +48,16 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
     toDatetimeLocal(roundToHalfHour(new Date())),
   );
   const [fechaCompletar, setFechaCompletar] = useState("");
+  // Potencial: ¿tiene fecha aproximada de pago? → columna tiene_fecha_pago.
+  // El campo de fecha (fechaAproxPago → fecha_aprox_pago) solo se muestra si está marcado.
+  const [tieneFechaPago, setTieneFechaPago] = useState(false);
+  const [fechaAproxPago, setFechaAproxPago] = useState("");
+  // Potencial: lead que requiere gestión especial → columna lead_complicado.
+  const [leadComplicado, setLeadComplicado] = useState(false);
   const [notas, setNotas] = useState("");
   const [tipo, setTipo] = useState("SEGUIMIENTO");
+  // TIPO DE PAGO (modo venta) → propiedad "TIPO DE PAGO" en Notion.
+  const [tipoDePago, setTipoDePago] = useState("SEÑA");
   const [estado, setEstado] = useState("ACCESOS ✅ POR CARGAR ❌");
   const [etapa, setEtapa] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -58,6 +66,10 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
   // Pre-carga desde la URL al montar (una sola vez): ?name, ?url, ?mode=pot.
   // Si un parámetro no viene, ese campo queda como está (vacío).
   // No toca fechaContacto (precarga de fecha+hora) ni las validaciones.
+  // setState dentro del effect es intencional: window.location solo existe en el
+  // cliente, así que no se puede leer en el inicializador de useState (rompe SSR).
+  // Corre una sola vez al montar.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const n = params.get("name");
@@ -67,9 +79,12 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
     if (u) setUrl(decodeURIComponent(u));
     // mode=pot → "potencial"; cualquier otro caso (o ausente) → "venta".
     setMode(m === "pot" ? "potencial" : "venta");
-    // Solo al montar.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // En venta, "Fecha completar pago" solo aplica (y es obligatoria) cuando el
+  // TIPO DE PAGO es SEÑA o DOWNSELL. Para PAYFULL/COMPLETA PAGO va oculta y null.
+  const requiereFechaPago =
+    mode === "venta" && (tipoDePago === "SEÑA" || tipoDePago === "DOWNSELL");
 
   const guardar = async () => {
     if (!nombre.trim()) {
@@ -78,6 +93,10 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
     }
     if (mode === "potencial" && !fechaContacto) {
       setMessage({ type: "err", text: "Elegí fecha y hora de contacto" });
+      return;
+    }
+    if (requiereFechaPago && !fechaCompletar) {
+      setMessage({ type: "err", text: "Indicá la fecha para completar el pago" });
       return;
     }
     setLoading(true);
@@ -90,10 +109,12 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
           body: JSON.stringify({
             nombre: nombre.trim(),
             fecha,
-            fechaCompletar,
+            // Solo se envía si el TIPO DE PAGO lo requiere; si no, vacío → null.
+            fechaCompletar: requiereFechaPago ? fechaCompletar : "",
             url,
             notas,
             tipo,
+            tipoDePago,
             estado,
           }),
         });
@@ -109,7 +130,10 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
             etapa,
             // Timestamp ISO con hora (ej: "2026-06-06T15:30:00").
             fecha_proximo_contacto: fechaContacto ? `${fechaContacto}:00` : null,
-            fecha_completar_pago: fechaCompletar || null,
+            tiene_fecha_pago: tieneFechaPago,
+            // Solo se guarda fecha si el checkbox está marcado; si no, null.
+            fecha_aprox_pago: tieneFechaPago && fechaAproxPago ? fechaAproxPago : null,
+            lead_complicado: leadComplicado,
             url_manychat: url || null,
             notas: notas || null,
           }),
@@ -205,15 +229,40 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
             )}
           </div>
         )}
-        <div>
-          <label className="text-xs text-muted">Fecha completar pago</label>
-          <input
-            type="date"
-            value={fechaCompletar}
-            onChange={(e) => setFechaCompletar(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
-          />
-        </div>
+        {mode === "potencial" ? (
+          <>
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={tieneFechaPago}
+                onChange={(e) => setTieneFechaPago(e.target.checked)}
+                className="h-4 w-4 accent-accent"
+              />
+              <span>¿Tiene fecha aproximada de pago?</span>
+            </label>
+            {/* El campo de fecha solo aparece si el checkbox está marcado. */}
+            {tieneFechaPago ? (
+              <div>
+                <label className="text-xs text-muted">Fecha aproximada de pago</label>
+                <input
+                  type="date"
+                  value={fechaAproxPago}
+                  onChange={(e) => setFechaAproxPago(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
+                />
+              </div>
+            ) : null}
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={leadComplicado}
+                onChange={(e) => setLeadComplicado(e.target.checked)}
+                className="h-4 w-4 accent-accent"
+              />
+              <span>Lead complicado / gestión</span>
+            </label>
+          </>
+        ) : null}
 
         {mode === "venta" ? (
           <>
@@ -241,6 +290,36 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
                 <option value="COMPLETA PAGO ⬆️">COMPLETA PAGO ⬆️</option>
               </select>
             </div>
+            <div>
+              <label className="text-xs text-muted">Tipo de pago</label>
+              <select
+                value={tipoDePago}
+                onChange={(e) => setTipoDePago(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
+              >
+                <option value="SEÑA">SEÑA</option>
+                <option value="PAYFULL">PAYFULL</option>
+                <option value="COMPLETA PAGO">COMPLETA PAGO</option>
+                <option value="DOWNSELL">DOWNSELL</option>
+              </select>
+            </div>
+            {/* Solo visible (y obligatoria) si el tipo de pago es SEÑA o DOWNSELL */}
+            {requiereFechaPago ? (
+              <div>
+                <label className="text-xs text-muted">Fecha completar pago</label>
+                <input
+                  type="date"
+                  value={fechaCompletar}
+                  onChange={(e) => setFechaCompletar(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
+                />
+                {!fechaCompletar ? (
+                  <p className="mt-1 text-xs text-danger">
+                    Indicá la fecha para completar el pago
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </>
         ) : (
           <div>
@@ -272,7 +351,11 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
         <button
           type="button"
           onClick={guardar}
-          disabled={loading || (mode === "potencial" && !fechaContacto)}
+          disabled={
+            loading ||
+            (mode === "potencial" && !fechaContacto) ||
+            (requiereFechaPago && !fechaCompletar)
+          }
           className="w-full rounded-lg bg-accent py-3 text-sm font-semibold text-background disabled:opacity-50"
         >
           {loading ? "Guardando…" : mode === "venta" ? "Guardar en Notion" : "Guardar en Supabase"}
