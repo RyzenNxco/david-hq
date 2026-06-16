@@ -27,6 +27,8 @@ type Plantilla = {
   respuestas: number | null;
   tasa_respuesta: number | null;
   etapa: string | null;
+  area: string | null;
+  etapa_embudo: string | null;
   tiene_foto: boolean;
   url_imagen: string | null;
   tiene_video: boolean;
@@ -35,6 +37,60 @@ type Plantilla = {
   created_at: string;
   updated_at: string;
 };
+
+// --- Agrupado por area + etapa del embudo ---
+const AREA_ORDER = ["COMERCIAL", "SISTEMA"];
+
+const ETAPA_ORDER: Record<string, string[]> = {
+  COMERCIAL: ["analisis", "pitch", "precio", "sena", "reactivacion", "general"],
+  SISTEMA: ["sistema", "otros"],
+};
+
+const AREA_LABELS: Record<string, string> = {
+  COMERCIAL: "COMERCIAL",
+  SISTEMA: "SISTEMA",
+};
+
+const ETAPA_LABELS: Record<string, string> = {
+  analisis: "Análisis",
+  pitch: "Pitch",
+  precio: "Precio",
+  sena: "Seña",
+  reactivacion: "Reactivación",
+  general: "General",
+  sistema: "Sistema",
+  otros: "Otros",
+};
+
+const ETAPA_COLORS: Record<string, string> = {
+  analisis: "#60a5fa",
+  pitch: "#a78bfa",
+  precio: "#4ade80",
+  sena: "#fbbf24",
+  reactivacion: "#f97316",
+  general: "#94a3b8",
+  sistema: "#e2e8f0",
+  otros: "#94a3b8",
+};
+
+// Segundo nivel de filtros (solo COMERCIAL)
+const COMERCIAL_ETAPAS = ETAPA_ORDER.COMERCIAL;
+
+type SortBy = "etapa" | "nombre" | "reciente";
+
+const areaRank = (area: string) => {
+  const i = AREA_ORDER.indexOf(area);
+  return i === -1 ? AREA_ORDER.length : i;
+};
+
+const etapaRank = (area: string, etapa: string) => {
+  const order = ETAPA_ORDER[area] || [];
+  const i = order.indexOf(etapa);
+  return i === -1 ? order.length : i;
+};
+
+const etapaLabel = (etapa: string) =>
+  etapa === "—" ? "Sin etapa" : ETAPA_LABELS[etapa] || etapa;
 
 // CSV row type
 type CSVRow = {
@@ -60,7 +116,9 @@ export function PlantillasManager() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [editingPlantilla, setEditingPlantilla] = useState<Plantilla | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedEtapa, setSelectedEtapa] = useState<string | null>(null);
+  const [selectedArea, setSelectedArea] = useState<string | null>(null);
+  const [selectedEtapaEmbudo, setSelectedEtapaEmbudo] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortBy>("etapa");
   const [showConFoto, setShowConFoto] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<string | null>(null);
@@ -76,6 +134,8 @@ export function PlantillasManager() {
         .from("plantillas")
         .select("*")
         .eq("activa", true)
+        .order("area", { ascending: true })
+        .order("etapa_embudo", { ascending: true })
         .order("nombre", { ascending: true });
 
       if (fetchError) throw fetchError;
@@ -97,7 +157,7 @@ export function PlantillasManager() {
     return Array.from(unique).sort() as string[];
   }, [plantillas]);
 
-  // Filter plantillas based on search, etapa, and foto
+  // Filter plantillas based on search, area, etapa_embudo, and foto
   const filteredPlantillas = useMemo(() => {
     let filtered = plantillas;
 
@@ -111,9 +171,16 @@ export function PlantillasManager() {
       );
     }
 
-    // Etapa filter
-    if (selectedEtapa) {
-      filtered = filtered.filter((p) => p.etapa === selectedEtapa);
+    // Area filter
+    if (selectedArea) {
+      filtered = filtered.filter(
+        (p) => (p.area || "").toUpperCase() === selectedArea
+      );
+    }
+
+    // Etapa del embudo filter (solo aplica dentro de COMERCIAL)
+    if (selectedArea === "COMERCIAL" && selectedEtapaEmbudo) {
+      filtered = filtered.filter((p) => p.etapa_embudo === selectedEtapaEmbudo);
     }
 
     // Con foto filter
@@ -122,7 +189,50 @@ export function PlantillasManager() {
     }
 
     return filtered;
-  }, [plantillas, searchQuery, selectedEtapa, showConFoto]);
+  }, [plantillas, searchQuery, selectedArea, selectedEtapaEmbudo, showConFoto]);
+
+  // Agrupado por area -> etapa_embudo -> nombre (para orden "etapa")
+  const groupedPlantillas = useMemo(() => {
+    const map = new Map<string, Map<string, Plantilla[]>>();
+    for (const p of filteredPlantillas) {
+      const area = (p.area || "—").toUpperCase();
+      const etapa = p.etapa_embudo || "—";
+      if (!map.has(area)) map.set(area, new Map());
+      const etapaMap = map.get(area)!;
+      if (!etapaMap.has(etapa)) etapaMap.set(etapa, []);
+      etapaMap.get(etapa)!.push(p);
+    }
+
+    const groups: { area: string; etapa: string; items: Plantilla[] }[] = [];
+    const areas = Array.from(map.keys()).sort(
+      (a, b) => areaRank(a) - areaRank(b) || a.localeCompare(b)
+    );
+    for (const area of areas) {
+      const etapaMap = map.get(area)!;
+      const etapas = Array.from(etapaMap.keys()).sort(
+        (a, b) => etapaRank(area, a) - etapaRank(area, b) || a.localeCompare(b)
+      );
+      for (const etapa of etapas) {
+        const items = etapaMap
+          .get(etapa)!
+          .slice()
+          .sort((a, b) => a.nombre.localeCompare(b.nombre));
+        groups.push({ area, etapa, items });
+      }
+    }
+    return groups;
+  }, [filteredPlantillas]);
+
+  // Lista plana ordenada (para orden "nombre" o "reciente")
+  const flatSortedPlantillas = useMemo(() => {
+    const arr = filteredPlantillas.slice();
+    if (sortBy === "nombre") {
+      arr.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    } else if (sortBy === "reciente") {
+      arr.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+    }
+    return arr;
+  }, [filteredPlantillas, sortBy]);
 
   // Copy text to clipboard
   const handleCopy = async (plantilla: Plantilla) => {
@@ -246,6 +356,124 @@ export function PlantillasManager() {
     return `${tasa.toFixed(1)}%`;
   };
 
+  // Render a single plantilla card
+  const renderCard = (plantilla: Plantilla) => {
+    const etapaColor = plantilla.etapa_embudo
+      ? ETAPA_COLORS[plantilla.etapa_embudo]
+      : undefined;
+    return (
+      <div
+        key={plantilla.id}
+        className="bg-surface border border-border rounded-xl overflow-hidden hover:border-accent/50 transition-colors flex flex-col"
+      >
+        {/* Image thumbnail */}
+        {plantilla.tiene_foto && plantilla.url_imagen && (
+          <div className="relative aspect-video bg-surface-2">
+            <img
+              src={plantilla.url_imagen}
+              alt={plantilla.nombre}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="p-4 flex-1 flex flex-col">
+          {/* Title */}
+          <h3 className="font-semibold text-foreground text-sm mb-2 line-clamp-1">
+            {plantilla.nombre}
+          </h3>
+
+          {/* Text preview */}
+          <p className="text-muted text-sm line-clamp-3 mb-3 flex-1">
+            {plantilla.texto}
+          </p>
+
+          {/* Badges row */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {/* Area badge */}
+            {plantilla.area && (
+              <span className="px-2 py-0.5 bg-surface-2 text-muted text-xs rounded-full font-medium border border-border">
+                {AREA_LABELS[plantilla.area.toUpperCase()] || plantilla.area}
+              </span>
+            )}
+
+            {/* Etapa del embudo badge */}
+            {plantilla.etapa_embudo && (
+              <span
+                className="px-2 py-0.5 text-xs rounded-full font-medium"
+                style={{
+                  color: etapaColor,
+                  backgroundColor: etapaColor ? `${etapaColor}22` : undefined,
+                }}
+              >
+                {etapaLabel(plantilla.etapa_embudo)}
+              </span>
+            )}
+
+            {/* Metrics badges */}
+            {plantilla.envios !== null && plantilla.envios > 0 && (
+              <span className="px-2 py-0.5 bg-surface-2 text-muted text-xs rounded-full">
+                {plantilla.envios} env
+              </span>
+            )}
+            {plantilla.respuestas !== null && plantilla.respuestas > 0 && (
+              <span className="px-2 py-0.5 bg-surface-2 text-muted text-xs rounded-full">
+                {plantilla.respuestas} resp
+              </span>
+            )}
+            {plantilla.tasa_respuesta !== null && (
+              <span className="px-2 py-0.5 bg-success/20 text-success text-xs rounded-full font-medium">
+                {formatTasa(plantilla.tasa_respuesta)}
+              </span>
+            )}
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-1 pt-2 border-t border-border">
+            <button
+              onClick={() => handleCopy(plantilla)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                copiedId === plantilla.id
+                  ? "bg-success/20 text-success"
+                  : "bg-surface-2 text-muted hover:text-foreground hover:bg-accent/10"
+              }`}
+            >
+              {copiedId === plantilla.id ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Copiado
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  Copiar
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setEditingPlantilla(plantilla)}
+              className="p-2 text-muted hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+              title="Editar"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => handleDelete(plantilla.id)}
+              className="p-2 text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
+              title="Eliminar"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <p className="text-center text-sm text-muted py-12">
@@ -306,49 +534,91 @@ export function PlantillasManager() {
         </div>
       </div>
 
-      {/* Filter chips */}
-      <div className="flex flex-wrap gap-2">
-        {/* Etapa chips */}
-        {etapas.map((etapa) => (
+      {/* Filtros */}
+      <div className="space-y-3">
+        {/* Nivel 1: Area + orden */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Area tabs */}
+          {[
+            { value: null, label: "Todas" },
+            { value: "COMERCIAL", label: "COMERCIAL" },
+            { value: "SISTEMA", label: "SISTEMA" },
+          ].map((tab) => (
+            <button
+              key={tab.label}
+              onClick={() => {
+                setSelectedArea(tab.value);
+                setSelectedEtapaEmbudo(null);
+              }}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                selectedArea === tab.value
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-surface-2 text-muted hover:text-foreground border border-border"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+
+          {/* Con foto chip */}
           <button
-            key={etapa}
-            onClick={() =>
-              setSelectedEtapa(selectedEtapa === etapa ? null : etapa)
-            }
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              selectedEtapa === etapa
-                ? "bg-accent text-accent-foreground"
+            onClick={() => setShowConFoto(!showConFoto)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
+              showConFoto
+                ? "bg-violet text-white"
                 : "bg-surface-2 text-muted hover:text-foreground border border-border"
             }`}
           >
-            {etapa}
+            <ImageIcon className="h-3.5 w-3.5" />
+            Con foto
           </button>
-        ))}
 
-        {/* Con foto chip */}
-        <button
-          onClick={() => setShowConFoto(!showConFoto)}
-          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
-            showConFoto
-              ? "bg-violet text-white"
-              : "bg-surface-2 text-muted hover:text-foreground border border-border"
-          }`}
-        >
-          <ImageIcon className="h-3.5 w-3.5" />
-          Con foto
-        </button>
+          {/* Ordenar por */}
+          <div className="ml-auto flex items-center gap-2">
+            <label className="text-xs text-muted">Ordenar por:</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortBy)}
+              className="px-2.5 py-1.5 bg-surface-2 border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
+            >
+              <option value="etapa">Etapa</option>
+              <option value="nombre">Nombre A-Z</option>
+              <option value="reciente">Más recientes</option>
+            </select>
+          </div>
+        </div>
 
-        {/* Clear filters */}
-        {(selectedEtapa || showConFoto) && (
-          <button
-            onClick={() => {
-              setSelectedEtapa(null);
-              setShowConFoto(false);
-            }}
-            className="px-3 py-1.5 rounded-full text-sm text-muted hover:text-foreground transition-colors"
-          >
-            Limpiar filtros
-          </button>
+        {/* Nivel 2: Etapa del embudo (solo COMERCIAL) */}
+        {selectedArea === "COMERCIAL" && (
+          <div className="flex flex-wrap gap-2 pl-1">
+            <button
+              onClick={() => setSelectedEtapaEmbudo(null)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                selectedEtapaEmbudo === null
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-surface-2 text-muted hover:text-foreground border border-border"
+              }`}
+            >
+              Todas
+            </button>
+            {COMERCIAL_ETAPAS.map((etapa) => (
+              <button
+                key={etapa}
+                onClick={() =>
+                  setSelectedEtapaEmbudo(
+                    selectedEtapaEmbudo === etapa ? null : etapa
+                  )
+                }
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                  selectedEtapaEmbudo === etapa
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-surface-2 text-muted hover:text-foreground border border-border"
+                }`}
+              >
+                {ETAPA_LABELS[etapa]}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
@@ -373,110 +643,30 @@ export function PlantillasManager() {
       {/* Cards grid */}
       {filteredPlantillas.length === 0 ? (
         <div className="text-center py-12 text-muted">
-          {searchQuery || selectedEtapa || showConFoto
+          {searchQuery || selectedArea || selectedEtapaEmbudo || showConFoto
             ? "No hay plantillas que coincidan con los filtros"
             : "No hay plantillas. Importá desde Google Sheet o creá una nueva."}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredPlantillas.map((plantilla) => (
-            <div
-              key={plantilla.id}
-              className="bg-surface border border-border rounded-xl overflow-hidden hover:border-accent/50 transition-colors flex flex-col"
-            >
-              {/* Image thumbnail */}
-              {plantilla.tiene_foto && plantilla.url_imagen && (
-                <div className="relative aspect-video bg-surface-2">
-                  <img
-                    src={plantilla.url_imagen}
-                    alt={plantilla.nombre}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Content */}
-              <div className="p-4 flex-1 flex flex-col">
-                {/* Title */}
-                <h3 className="font-semibold text-foreground text-sm mb-2 line-clamp-1">
-                  {plantilla.nombre}
-                </h3>
-
-                {/* Text preview */}
-                <p className="text-muted text-sm line-clamp-3 mb-3 flex-1">
-                  {plantilla.texto}
-                </p>
-
-                {/* Badges row */}
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {/* Etapa badge */}
-                  {plantilla.etapa && (
-                    <span className="px-2 py-0.5 bg-accent/20 text-accent text-xs rounded-full font-medium">
-                      {plantilla.etapa}
-                    </span>
-                  )}
-
-                  {/* Metrics badges */}
-                  {plantilla.envios !== null && plantilla.envios > 0 && (
-                    <span className="px-2 py-0.5 bg-surface-2 text-muted text-xs rounded-full">
-                      {plantilla.envios} env
-                    </span>
-                  )}
-                  {plantilla.respuestas !== null && plantilla.respuestas > 0 && (
-                    <span className="px-2 py-0.5 bg-surface-2 text-muted text-xs rounded-full">
-                      {plantilla.respuestas} resp
-                    </span>
-                  )}
-                  {plantilla.tasa_respuesta !== null && (
-                    <span className="px-2 py-0.5 bg-success/20 text-success text-xs rounded-full font-medium">
-                      {formatTasa(plantilla.tasa_respuesta)}
-                    </span>
-                  )}
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex items-center gap-1 pt-2 border-t border-border">
-                  <button
-                    onClick={() => handleCopy(plantilla)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      copiedId === plantilla.id
-                        ? "bg-success/20 text-success"
-                        : "bg-surface-2 text-muted hover:text-foreground hover:bg-accent/10"
-                    }`}
-                  >
-                    {copiedId === plantilla.id ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Copiado
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4" />
-                        Copiar
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setEditingPlantilla(plantilla)}
-                    className="p-2 text-muted hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
-                    title="Editar"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(plantilla.id)}
-                    className="p-2 text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
-                    title="Eliminar"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+      ) : sortBy === "etapa" ? (
+        // Agrupado por area -> etapa con separadores
+        <div className="space-y-8">
+          {groupedPlantillas.map((group) => (
+            <div key={`${group.area}-${group.etapa}`}>
+              <SectionHeader
+                area={group.area}
+                etapa={group.etapa}
+                count={group.items.length}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {group.items.map((plantilla) => renderCard(plantilla))}
               </div>
             </div>
           ))}
+        </div>
+      ) : (
+        // Lista plana ordenada
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {flatSortedPlantillas.map((plantilla) => renderCard(plantilla))}
         </div>
       )}
 
@@ -503,6 +693,34 @@ export function PlantillasManager() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+// Section header / separator for area + etapa groups
+function SectionHeader({
+  area,
+  etapa,
+  count,
+}: {
+  area: string;
+  etapa: string;
+  count: number;
+}) {
+  const areaLabel = AREA_LABELS[area] || (area === "—" ? "Sin área" : area);
+  return (
+    <div
+      className="flex items-center gap-3 mb-4 px-3 py-1.5 rounded-lg"
+      style={{ backgroundColor: "#0d0e1a" }}
+    >
+      <div className="h-px flex-1" style={{ backgroundColor: "#a78bfa33" }} />
+      <span
+        className="text-xs font-medium tracking-wide whitespace-nowrap"
+        style={{ color: "#a78bfa" }}
+      >
+        {areaLabel} · {etapaLabel(etapa)} ({count})
+      </span>
+      <div className="h-px flex-1" style={{ backgroundColor: "#a78bfa33" }} />
     </div>
   );
 }
