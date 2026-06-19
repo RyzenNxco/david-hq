@@ -79,9 +79,11 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
         .from("ventas-archivos")
         .upload(path, file, { upsert: true });
       if (error) throw error;
-      setArchivoUrl(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ventas-archivos/${path}`,
-      );
+      const { data: urlData } = supabase.storage
+        .from("ventas-archivos")
+        .getPublicUrl(path);
+      const publicUrl = urlData.publicUrl;
+      setArchivoUrl(publicUrl);
     } catch {
       setArchivoError("Error al subir el archivo");
     }
