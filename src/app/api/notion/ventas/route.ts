@@ -75,6 +75,10 @@ export async function POST(request: Request) {
     if (body.notas) {
       properties.datos = { rich_text: [{ text: { content: String(body.notas) } }] };
     }
+    // Propiedad de archivos: se reenvía tal cual desde el cliente si viene presente.
+    if (body["Archivos y multimedia"]) {
+      properties["Archivos y multimedia"] = body["Archivos y multimedia"];
+    }
 
     const page = await notionFetch<{ id: string }>("pages", {
       method: "POST",

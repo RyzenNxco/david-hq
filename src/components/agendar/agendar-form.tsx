@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ETAPAS, formatContacto } from "@/lib/leads";
+import { createClient } from "@/lib/supabase/client";
 
 type Props = {
   initialUrl?: string;
@@ -62,6 +63,50 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
   const [etapa, setEtapa] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  // Modo venta: archivo (imagen pegada o PDF subido) que se adjunta en Notion.
+  const [archivoUrl, setArchivoUrl] = useState<string>("");
+  const [archivoError, setArchivoError] = useState("");
+  const archivoInputRef = useRef<HTMLInputElement>(null);
+  const supabase = createClient();
+
+  // Sube un archivo al bucket "ventas-archivos" y guarda su URL pública.
+  const subirArchivo = async (file: File) => {
+    setArchivoError("");
+    try {
+      const ext = file.type === "application/pdf" || file.name.endsWith(".pdf") ? "pdf" : "png";
+      const path = `ventas/venta_${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("ventas-archivos")
+        .upload(path, file, { upsert: true });
+      if (error) throw error;
+      setArchivoUrl(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ventas-archivos/${path}`,
+      );
+    } catch {
+      setArchivoError("Error al subir el archivo");
+    }
+  };
+
+  // Pegar imagen desde el portapapeles (Ctrl+V) en la zona de paste.
+  const onPasteArchivo = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const blob = item.getAsFile();
+        if (!blob) continue;
+        const file = new File([blob], `venta_${Date.now()}.png`, { type: blob.type });
+        await subirArchivo(file);
+        break;
+      }
+    }
+  };
+
+  // Seleccionar archivo (imagen o PDF) desde el input oculto.
+  const onSelectArchivo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) await subirArchivo(file);
+  };
 
   // Pre-carga desde la URL al montar (una sola vez): ?name, ?url, ?mode=pot.
   // Si un parámetro no viene, ese campo queda como está (vacío).
@@ -103,20 +148,29 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
     setMessage(null);
     try {
       if (mode === "venta") {
+        const ventaBody: Record<string, unknown> = {
+          nombre: nombre.trim(),
+          fecha,
+          // Solo se envía si el TIPO DE PAGO lo requiere; si no, vacío → null.
+          fechaCompletar: requiereFechaPago ? fechaCompletar : "",
+          url,
+          notas,
+          tipo,
+          tipoDePago,
+          estado,
+        };
+        // Si hay archivo subido, se adjunta como propiedad de archivos en Notion.
+        if (archivoUrl) {
+          ventaBody["Archivos y multimedia"] = {
+            files: [
+              { type: "external", name: "archivo", external: { url: archivoUrl } },
+            ],
+          };
+        }
         const res = await fetch("/api/notion/ventas", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nombre: nombre.trim(),
-            fecha,
-            // Solo se envía si el TIPO DE PAGO lo requiere; si no, vacío → null.
-            fechaCompletar: requiereFechaPago ? fechaCompletar : "",
-            url,
-            notas,
-            tipo,
-            tipoDePago,
-            estado,
-          }),
+          body: JSON.stringify(ventaBody),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
@@ -347,6 +401,48 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
             className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
           />
         </div>
+
+        {mode === "venta" ? (
+          <div>
+            <label className="text-xs text-muted">Archivo (imagen / PDF)</label>
+            {archivoUrl ? (
+              <div className="relative mt-1 inline-block">
+                <img
+                  src={archivoUrl}
+                  alt="archivo"
+                  className="h-[100px] rounded-lg border border-border"
+                />
+                <button
+                  type="button"
+                  onClick={() => setArchivoUrl("")}
+                  className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-danger text-xs text-background"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => archivoInputRef.current?.click()}
+                onPaste={onPasteArchivo}
+                className="mt-1 cursor-pointer rounded-lg border-2 border-dashed border-neutral-600 bg-surface-2 px-3 py-6 text-center text-sm text-muted"
+              >
+                📋 Pegá una imagen acá (Ctrl+V) o hacé clic para subir PDF
+              </div>
+            )}
+            <input
+              ref={archivoInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              onChange={onSelectArchivo}
+              className="hidden"
+            />
+            {archivoError ? (
+              <p className="mt-1 text-xs text-danger">{archivoError}</p>
+            ) : null}
+          </div>
+        ) : null}
 
         <button
           type="button"
