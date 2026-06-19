@@ -75,9 +75,28 @@ export async function POST(request: Request) {
     if (body.notas) {
       properties.datos = { rich_text: [{ text: { content: String(body.notas) } }] };
     }
-    // Propiedad de archivos: se reenvía tal cual desde el cliente si viene presente.
-    if (body["Archivos y multimedia"]) {
-      properties["Archivos y multimedia"] = body["Archivos y multimedia"];
+    // El archivo NO va como propiedad: se agrega como bloque en el cuerpo de la página.
+    const archivo = body["Archivos y multimedia"] as
+      | { files?: { external?: { url?: string }; name?: string }[] }
+      | undefined;
+    const archivoUrl = archivo?.files?.[0]?.external?.url?.trim();
+
+    const children: unknown[] = [];
+    if (archivoUrl) {
+      const esPdf = archivoUrl.toLowerCase().endsWith(".pdf");
+      if (esPdf) {
+        children.push({
+          object: "block",
+          type: "pdf",
+          pdf: { type: "external", external: { url: archivoUrl } },
+        });
+      } else {
+        children.push({
+          object: "block",
+          type: "image",
+          image: { type: "external", external: { url: archivoUrl } },
+        });
+      }
     }
 
     const page = await notionFetch<{ id: string }>("pages", {
@@ -85,6 +104,7 @@ export async function POST(request: Request) {
       body: {
         parent: { database_id: databaseId },
         properties,
+        ...(children.length > 0 ? { children } : {}),
       },
     });
 
