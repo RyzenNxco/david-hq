@@ -1,0 +1,2210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComisionesTracker PRO</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0b1a1e;--surface:#0f2328;--surface-2:#132d33;--surface-3:#173940;
+  --border:#1e4a52;--border-light:#2a5f69;
+  --text:#e4f0f2;--text-dim:#7ba3ab;--text-muted:#4d7a83;
+  --accent:#00d4aa;--accent-dim:rgba(0,212,170,.12);--accent-glow:rgba(0,212,170,.2);
+  --cyan:#00bcd4;--cyan-dim:rgba(0,188,212,.12);
+  --gold:#f0c040;--gold-dim:rgba(240,192,64,.12);
+  --pink:#ff6b9d;--pink-dim:rgba(255,107,157,.12);
+  --blue:#4facfe;--blue-dim:rgba(79,172,254,.12);
+  --red:#ff5252;--red-dim:rgba(255,82,82,.12);
+  --usd:#4caf50;--usd-dim:rgba(76,175,80,.12);
+  --orange:#ff9800;--orange-dim:rgba(255,152,0,.12);
+  --purple:#b388ff;--purple-dim:rgba(179,136,255,.12);
+  --r:12px;--rl:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;top:-30%;left:-20%;width:70%;height:70%;background:radial-gradient(ellipse,rgba(0,212,170,.03)0%,transparent 70%);pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:16px 20px 80px}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 20px;border-bottom:1px solid var(--border);margin-bottom:0}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--accent),var(--cyan));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:var(--bg);box-shadow:0 4px 20px rgba(0,212,170,.25)}
+.brand h1{font-size:1.2rem;font-weight:800;letter-spacing:-.5px}
+.brand h1 span{color:var(--accent)}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px;overflow-x:auto}
+.tab{padding:14px 24px;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;position:relative}
+.tab:hover{color:var(--text-dim)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab .tab-badge{position:absolute;top:8px;right:8px;background:var(--pink);color:var(--bg);font-size:.55rem;font-weight:800;padding:2px 6px;border-radius:10px;min-width:18px;text-align:center}
+
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* SUMMARY CARDS */
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.scard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .25s,transform .2s}
+.scard:hover{border-color:var(--border-light);transform:translateY(-2px)}
+.scard .sl{font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);font-weight:600;margin-bottom:8px}
+.scard .sv{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700}
+.scard .ss{font-size:.65rem;margin-top:4px;font-family:'JetBrains Mono',monospace}
+.scard .si{position:absolute;top:12px;right:14px;font-size:1rem;opacity:.3}
+
+/* PILLS */
+.pills{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.pill{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.pill .pl{font-size:.62rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600}
+.pill .pv{font-family:'JetBrains Mono',monospace;font-size:.95rem;font-weight:700}
+
+/* FORM */
+.form-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:22px;margin-bottom:22px}
+.stitle{font-size:.7rem;text-transform:uppercase;letter-spacing:2px;color:var(--accent);font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.stitle::before{content:'';width:6px;height:6px;background:var(--accent);border-radius:50%;box-shadow:0 0 10px var(--accent)}
+.stitle.edit-mode{color:var(--orange)}.stitle.edit-mode::before{background:var(--orange);box-shadow:0 0 10px var(--orange)}
+
+.fgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg.s2{grid-column:span 2}.fg.sf{grid-column:1/-1}
+.fg label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600}
+.fg input,.fg select,.fg textarea{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:.88rem;outline:none;transition:border-color .2s,box-shadow .2s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.fg input::placeholder,.fg textarea::placeholder{color:var(--text-muted)}
+.fg textarea{resize:vertical;min-height:60px;font-size:.82rem}
+.fhint{font-size:.65rem;opacity:.6;margin-top:1px}
+
+/* Monto wrapper */
+.mw{display:flex;gap:0}
+.mw input{border-radius:10px 0 0 10px;flex:1;min-width:0}
+.mt{display:flex;flex-direction:column}
+.mb{padding:0 12px;background:var(--surface-3);border:1px solid var(--border);color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:700;cursor:pointer;transition:all .15s;flex:1;display:flex;align-items:center;justify-content:center}
+.mb:first-child{border-radius:0 10px 0 0;border-bottom:none}.mb:last-child{border-radius:0 0 10px 0}
+.mb.a-ars{background:var(--cyan-dim);color:var(--cyan);border-color:var(--cyan)}
+.mb.a-usd{background:var(--usd-dim);color:var(--usd);border-color:var(--usd)}
+
+/* Toggle buttons */
+.tr{display:flex;gap:8px}
+.tb{flex:1;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;color:var(--text-muted);font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;text-align:center}
+.tb:hover{border-color:var(--text-dim)}
+.tb.a-clase{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
+.tb.a-seg{background:var(--cyan-dim);border-color:var(--cyan);color:var(--cyan)}
+.tb.a-sena{background:var(--pink-dim);border-color:var(--pink);color:var(--pink)}
+.tb.a-payfull{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.tb.a-ds{background:var(--purple-dim);border-color:var(--purple);color:var(--purple)}
+.tb.a-comp{background:var(--orange-dim);border-color:var(--orange);color:var(--orange)}
+
+/* Extra rows */
+.erow{grid-column:1/-1;display:none;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:14px;border-radius:10px}
+.erow.show{display:grid}
+.erow.cotiz{background:rgba(0,188,212,.04);border:1px dashed rgba(0,188,212,.2)}
+.erow.cotiz label{color:var(--cyan)}
+.erow.cotiz input{color:var(--cyan);font-family:'JetBrains Mono',monospace;font-weight:600}
+.erow.ticket{background:rgba(76,175,80,.04);border:1px dashed rgba(76,175,80,.25)}
+.erow.ticket label{color:var(--usd)}
+.erow.ticket input{color:var(--usd);font-family:'JetBrains Mono',monospace;font-weight:600}
+.erow.sena{background:rgba(255,107,157,.04);border:1px dashed rgba(255,107,157,.25)}
+.erow.sena label{color:var(--pink)}
+.erow.sena input{color:var(--pink)}
+.erow.link-row{background:rgba(179,136,255,.04);border:1px dashed rgba(179,136,255,.25)}
+.erow.link-row label{color:var(--purple)}
+.erow.link-row input,.erow.link-row textarea{color:var(--purple)}
+.erow.comp{background:rgba(255,152,0,.04);border:1px dashed rgba(255,152,0,.25)}
+.erow.comp label{color:var(--orange)}
+.erow.comp select{color:var(--orange);font-weight:600}
+
+/* Comision dual */
+.cdual{grid-column:1/-1;display:none;grid-template-columns:1fr 1fr;gap:12px;padding:12px;background:rgba(240,192,64,.04);border:1px dashed rgba(240,192,64,.2);border-radius:10px}
+.cdual.show{display:grid}
+.csim{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;gap:3px}
+.csim .csl{font-size:.6rem;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.csim .csv{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700}
+.csim.sc .csl{color:var(--gold)}.csim.sc .csv{color:var(--gold)}
+.csim.ss .csl{color:var(--cyan)}.csim.ss .csv{color:var(--cyan)}
+
+/* Preview bar */
+.pvbar{grid-column:1/-1;display:flex;gap:18px;align-items:center;flex-wrap:wrap;background:var(--surface-3);border:1px solid var(--border);border-radius:10px;padding:12px 18px;margin-top:2px}
+.pvi .pvl{font-size:.55rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:1px}
+.pvi .pvv{font-family:'JetBrains Mono',monospace;font-size:.9rem;font-weight:700}
+.pvd{width:1px;height:28px;background:var(--border)}
+
+/* Buttons */
+.btn-main{grid-column:1/-1;padding:12px 28px;background:linear-gradient(135deg,var(--accent),#00b89c);border:none;border-radius:var(--r);color:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:transform .12s,box-shadow .2s}
+.btn-main:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(0,212,170,.3)}
+.btn-main:active{transform:scale(.98)}
+.btn-main.edit-mode{background:linear-gradient(135deg,var(--orange),#f57c00)}
+.btn-cancel{grid-column:1/-1;padding:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r);color:var(--text-dim);font-size:.82rem;font-weight:600;cursor:pointer;display:none}
+
+/* Edit banner */
+.edit-banner{display:none;background:linear-gradient(135deg,rgba(255,152,0,.15),rgba(255,152,0,.08));border:1px solid var(--orange);border-radius:10px;padding:10px 16px;margin-bottom:14px;color:var(--orange);font-size:.8rem;font-weight:600;align-items:center;gap:10px}
+.edit-banner.show{display:flex}
+.edit-banner::before{content:'✎';font-size:1.1rem}
+
+/* TABLE */
+.tbox{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:22px}
+.ttop{padding:16px 22px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.ttop .stitle{margin-bottom:0}
+.filters{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.filters select,.filters input[type="date"]{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:.72rem;outline:none}
+.filters input[type="date"]{width:125px}
+.flabel{font-size:.55rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:600}
+.fgroup{display:flex;flex-direction:column;gap:2px}
+.btn-sm{padding:6px 12px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:.68rem;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid}
+.btn-csv{background:var(--cyan-dim);border-color:rgba(0,188,212,.3);color:var(--cyan)}
+.btn-dng{background:var(--red-dim);border-color:rgba(255,82,82,.3);color:var(--red)}
+
+.tscroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 10px;font-size:.55rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);background:var(--surface-2);font-weight:700;white-space:nowrap}
+td{padding:10px 10px;font-size:.78rem;border-bottom:1px solid rgba(30,74,82,.4);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,212,170,.02)}
+tr.editing td{background:rgba(255,152,0,.08)}
+
+.badge{display:inline-block;padding:3px 7px;border-radius:6px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.b-clase{background:var(--gold-dim);color:var(--gold)}
+.b-seg{background:var(--cyan-dim);color:var(--cyan)}
+.b-sena{background:var(--pink-dim);color:var(--pink)}
+.b-payfull{background:var(--accent-dim);color:var(--accent)}
+.b-ds{background:var(--purple-dim);color:var(--purple)}
+.b-comp{background:var(--orange-dim);color:var(--orange)}
+.b-ars{background:var(--blue-dim);color:var(--blue)}
+.b-usd{background:var(--usd-dim);color:var(--usd)}
+.b-pago{background:var(--accent-dim);color:var(--accent)}
+.b-pagado{background:var(--accent-dim);color:var(--accent)}
+.b-debe{background:var(--red-dim);color:var(--red)}
+.b-venc{background:var(--red);color:#fff;animation:pulse 1.5s infinite}
+
+.mono{font-family:'JetBrains Mono',monospace;font-weight:600}
+.c-a{color:var(--accent)}.c-u{color:var(--usd)}.c-p{color:var(--pink)}.c-o{color:var(--orange)}.c-c{color:var(--cyan)}.c-g{color:var(--gold)}.c-r{color:var(--red)}.c-pu{color:var(--purple)}
+
+.row-act{display:flex;gap:3px;align-items:center}
+.ba{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:3px 6px;border-radius:6px;transition:all .15s;font-size:.85rem}
+.ba.be:hover{color:var(--orange);background:var(--orange-dim)}
+.ba.bd:hover{color:var(--red);background:var(--red-dim)}
+.ba.bl:hover{color:var(--purple);background:var(--purple-dim)}
+
+.empty{text-align:center;padding:40px 20px;color:var(--text-muted)}
+.empty .ei{font-size:1.8rem;margin-bottom:8px}
+.empty p{font-size:.8rem}
+
+.fin-tag{font-size:.55rem;color:var(--orange);text-transform:uppercase;letter-spacing:.5px}
+.pink-tag{font-size:.55rem;color:var(--pink)}
+
+/* Saldos pendientes cards */
+.saldo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:18px;margin-bottom:12px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:16px;align-items:center;transition:border-color .2s}
+.saldo-card:hover{border-color:var(--border-light)}
+.saldo-card.overdue{border-color:var(--red);background:rgba(255,82,82,.03)}
+.sc-name{font-weight:700;font-size:.9rem}
+.sc-sub{font-size:.7rem;color:var(--text-dim);margin-top:2px}
+.sc-amount{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1rem}
+.sc-date{font-size:.82rem}
+.sc-actions{display:flex;gap:6px}
+.sc-btn{padding:6px 12px;border-radius:8px;font-size:.7rem;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s}
+
+/* Transcription cards */
+.trans-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:10px}
+.tc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.tc-name{font-weight:700;font-size:.88rem}
+.tc-date{font-size:.72rem;color:var(--text-dim)}
+.tc-text{font-size:.82rem;color:var(--text-dim);line-height:1.5;white-space:pre-wrap;max-height:120px;overflow:hidden;transition:max-height .5s ease}
+.tc-text.expanded{max-height:5000px;overflow:visible}
+.tc-toggle{font-size:.7rem;color:var(--accent);cursor:pointer;margin-top:6px;font-weight:600}
+
+/* Search */
+.search-bar{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:.88rem;outline:none;width:100%;margin-bottom:16px;transition:border-color .2s}
+.search-bar:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.scard,.pill{animation:fadeUp .35s ease backwards}
+
+@media(max-width:768px){
+  .sgrid,.pills{grid-template-columns:1fr 1fr}
+  .fgrid{grid-template-columns:1fr}
+  .fg.s2{grid-column:span 1}
+  .erow,.cdual{grid-template-columns:1fr!important}
+  .header{flex-direction:column;gap:12px;align-items:flex-start}
+  .ttop{flex-direction:column;gap:10px;align-items:flex-start}
+  .pvbar{flex-direction:column;gap:8px;align-items:flex-start}
+  .saldo-card{grid-template-columns:1fr;gap:10px}
+  .tabs{gap:0}
+  .tab{padding:10px 14px;font-size:.7rem}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">$</div>
+    <h1>COMISIONES<span>TRACKER</span> <small style="font-size:.6rem;color:var(--text-muted);font-weight:500">PRO</small></h1>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <div id="notionStatusBadge" style="display:none;font-size:.65rem;padding:4px 10px;border-radius:20px;background:var(--accent-dim);color:var(--accent);font-weight:600;letter-spacing:.5px">● NOTION CONECTADO</div>
+    <button id="syncBtn" onclick="syncFromNotion()" style="display:none;padding:8px 14px;background:var(--cyan-dim);border:1px solid var(--cyan);border-radius:10px;color:var(--cyan);font-family:'Plus Jakarta Sans',sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;display:none;align-items:center;gap:6px">
+      <span id="syncIcon">🔄</span> <span id="syncLabel">Sincronizar</span>
+    </button>
+    <button onclick="openNotionConfig()" style="padding:8px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;color:var(--text-dim);font-family:'Plus Jakarta Sans',sans-serif;font-size:.75rem;font-weight:700;cursor:pointer">⚙️ Notion</button>
+  </div>
+</div>
+
+<!-- MODAL: Notion Config -->
+<div id="notionModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:28px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div class="stitle" style="margin:0">Conectar con Notion</div>
+      <button onclick="closeNotionConfig()" style="background:transparent;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer">×</button>
+    </div>
+    
+    <div style="background:var(--surface-2);padding:14px 16px;border-radius:10px;margin-bottom:18px;font-size:.78rem;line-height:1.5;color:var(--text-dim)">
+      <strong style="color:var(--accent)">📋 Cómo obtener tu API key:</strong><br>
+      1. Andá a <a href="https://www.notion.so/profile/integrations" target="_blank" style="color:var(--cyan)">notion.so/profile/integrations</a><br>
+      2. Crear integración → tipo "Internal"<br>
+      3. Copiá el "Internal Integration Secret" (empieza con <code style="background:var(--surface-3);padding:1px 6px;border-radius:4px;color:var(--accent)">ntn_</code>)<br>
+      4. Abrí tu base VENTAS PRACTIGRAM → ⋯ → Conexiones → invitá tu integración
+    </div>
+    
+    <div class="fg" style="margin-bottom:14px">
+      <label>API Key (secret)</label>
+      <input type="password" id="notionApiKey" placeholder="ntn_xxxxxxxxxxxx" style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.8rem">
+      <div class="fhint" style="color:var(--text-muted)">Se guarda solo en tu navegador (localStorage)</div>
+    </div>
+    
+    <div class="fg" style="margin-bottom:14px">
+      <label>Database ID</label>
+      <input type="text" id="notionDbId" placeholder="30e015e2-52d3-8030-ad63-000bca99c133" style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.8rem">
+      <div class="fhint" style="color:var(--text-muted)">Default: la base VENTAS PRACTIGRAM</div>
+    </div>
+    
+    <div style="background:rgba(240,192,64,.06);border:1px dashed rgba(240,192,64,.3);padding:12px 14px;border-radius:10px;margin-bottom:18px;font-size:.75rem;color:var(--gold);line-height:1.5">
+      <strong>⚠️ Importante:</strong> los datos de Notion son la base. El tracker calcula comisiones encima. No se sobreescribe nada en Notion.
+    </div>
+    
+    <!-- Toggle: sincronizar todo el histórico vs solo mes actual -->
+    <div style="background:var(--surface-2);padding:14px 16px;border-radius:10px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px">
+      <div>
+        <div style="font-weight:600;font-size:.82rem;color:var(--text);margin-bottom:4px">📅 Rango de sincronización</div>
+        <div style="font-size:.7rem;color:var(--text-muted);line-height:1.4" id="syncRangeHint">
+          Solo se bajan ventas desde el <strong style="color:var(--accent)">inicio del mes actual</strong> en adelante.
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;white-space:nowrap;font-size:.75rem;color:var(--text-dim)">
+        <input type="checkbox" id="syncAllToggle" onchange="toggleSyncAll()" style="cursor:pointer;width:16px;height:16px;accent-color:var(--accent)">
+        Bajar todo
+      </label>
+    </div>
+    
+    <div style="display:flex;gap:10px">
+      <button onclick="saveNotionConfig()" class="btn-main" style="flex:1;margin:0">Guardar y probar conexión</button>
+      <button onclick="disconnectNotion()" style="padding:12px 18px;background:var(--red-dim);border:1px solid var(--red);border-radius:10px;color:var(--red);font-weight:700;cursor:pointer">Desconectar</button>
+    </div>
+    
+    <div id="notionTestResult" style="margin-top:14px;font-size:.78rem;display:none"></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)">Dashboard</div>
+  <div class="tab" onclick="switchTab(1)">Saldos Pendientes <span class="tab-badge" id="saldosBadge" style="display:none">0</span></div>
+  <div class="tab" onclick="switchTab(2)">Historial</div>
+  <div class="tab" onclick="switchTab(3)">📚 Histórico mensual</div>
+  <div class="tab" onclick="switchTab(4)">🎯 Potenciales <span class="tab-badge" id="potBadge" style="display:none">0</span></div>
+  <div class="tab" onclick="switchTab(5)">Transcripciones</div>
+</div>
+
+<!-- ============ TAB 0: DASHBOARD ============ -->
+<div class="tab-content active" id="tab0">
+
+  <!-- SELECTOR DE MES -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rl)">
+    <div style="display:flex;align-items:center;gap:14px">
+      <button onclick="changeMonth(-1)" style="width:36px;height:36px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">◀</button>
+      <div style="text-align:center;min-width:200px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--accent)" id="currentMonthLabel">—</div>
+        <div style="font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px" id="currentMonthSubtitle">Mes actual</div>
+      </div>
+      <button onclick="changeMonth(1)" style="width:36px;height:36px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">▶</button>
+      <button onclick="resetToCurrentMonth()" style="padding:8px 14px;background:var(--accent-dim);border:1px solid var(--accent);border-radius:10px;color:var(--accent);font-family:'Plus Jakarta Sans',sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:1px">Hoy</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button onclick="verMesEnHistorico()" style="padding:8px 14px;background:var(--gold-dim);border:1px solid var(--gold);border-radius:10px;color:var(--gold);font-family:'Plus Jakarta Sans',sans-serif;font-size:.72rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">
+        📚 Ver detalle del mes
+      </button>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.78rem;color:var(--text-dim)">
+        <input type="checkbox" id="showAllToggle" onchange="toggleShowAll()" style="cursor:pointer;width:16px;height:16px;accent-color:var(--accent)">
+        Ver TODOS los meses
+      </label>
+    </div>
+  </div>  <div class="sgrid">
+    <div class="scard"><div class="si">📊</div><div class="sl">Ventas totales</div><div class="sv c-a" id="sVentas">0</div></div>
+    <div class="scard"><div class="si">💰</div><div class="sl">Mi comisión (neto)</div><div class="sv c-c" id="sComision">$0</div><div class="ss fin-tag" id="sComBruto"></div></div>
+    <div class="scard"><div class="si">🏢</div><div class="sl">Facturación bruta</div><div class="sv c-g" id="sFact">$0</div><div class="ss c-o" id="sFactNeto"></div></div>
+    <div class="scard"><div class="si">💵</div><div class="sl">Cash collected</div><div class="sv" style="color:var(--blue)" id="sCash">$0</div></div>
+  </div>
+
+  <div class="pills">
+    <div class="pill"><span class="pl">Clase (2%)</span><span class="pv c-g" id="sClase">$0</span></div>
+    <div class="pill"><span class="pl">Seg. (18%)</span><span class="pv c-c" id="sSeg">$0</span></div>
+    <div class="pill"><span class="pl">Tickets USD</span><span class="pv c-u" id="sUsd">U$D 0</span></div>
+    <div class="pill"><span class="pl">Saldos pend.</span><span class="pv c-p" id="sSaldos">U$D 0</span></div>
+  </div>
+
+  <!-- BANNER: ventas pendientes de completar desde Notion -->
+  <div id="needsCompletionBanner" style="display:none;background:linear-gradient(135deg,rgba(255,152,0,.12),rgba(255,152,0,.04));border:1px solid var(--orange);border-radius:var(--rl);padding:14px 20px;margin-bottom:18px;display:none;align-items:center;justify-content:space-between;gap:14px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span style="font-size:1.5rem">⚡</span>
+      <div>
+        <div style="font-weight:700;color:var(--orange);font-size:.92rem">
+          <span id="needsCompletionCount">0</span> ventas desde Notion pendientes de completar
+        </div>
+        <div style="font-size:.74rem;color:var(--text-dim);margin-top:2px">
+          Comisión en $0 hasta que cargues monto, cotización y ticket
+        </div>
+      </div>
+    </div>
+    <button onclick="abrirPendientesParaCompletar()" style="padding:10px 18px;background:var(--orange-dim);border:1px solid var(--orange);border-radius:10px;color:var(--orange);font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap">
+      Completar ahora →
+    </button>
+  </div>
+
+  <!-- QUICK ACTIONS -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px" id="quickActions">
+    <button onclick="switchTab(1)" style="padding:14px 16px;background:var(--pink-dim);border:1px solid rgba(255,107,157,.3);border-radius:12px;color:var(--pink);font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;justify-content:center" onmouseover="this.style.background='rgba(255,107,157,.2)'" onmouseout="this.style.background='var(--pink-dim)'">
+      <span style="font-size:1.1rem">💳</span> Cobrar señas <span class="badge b-sena" id="qaSenaBadge" style="display:none;margin-left:4px">0</span>
+    </button>
+    <button onclick="irASeñasManyChat()" style="padding:14px 16px;background:var(--purple-dim);border:1px solid rgba(179,136,255,.3);border-radius:12px;color:var(--purple);font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;justify-content:center" onmouseover="this.style.background='rgba(179,136,255,.2)'" onmouseout="this.style.background='var(--purple-dim)'">
+      <span style="font-size:1.1rem">🔗</span> Chats ManyChat
+    </button>
+    <button onclick="switchTab(4)" style="padding:14px 16px;background:var(--cyan-dim);border:1px solid rgba(0,188,212,.3);border-radius:12px;color:var(--cyan);font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;justify-content:center" onmouseover="this.style.background='rgba(0,188,212,.2)'" onmouseout="this.style.background='var(--cyan-dim)'">
+      <span style="font-size:1.1rem">📝</span> Transcripciones
+    </button>
+    <button onclick="switchTab(2)" style="padding:14px 16px;background:var(--gold-dim);border:1px solid rgba(240,192,64,.3);border-radius:12px;color:var(--gold);font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;justify-content:center" onmouseover="this.style.background='rgba(240,192,64,.2)'" onmouseout="this.style.background='var(--gold-dim)'">
+      <span style="font-size:1.1rem">📊</span> Historial completo
+    </button>
+  </div>
+
+  <!-- FORM -->
+  <div class="form-box">
+    <div class="edit-banner" id="editBanner">Editando venta — los cambios reemplazarán el registro original</div>
+    <div class="stitle" id="formTitle">Registrar venta</div>
+    <div class="fgrid">
+
+      <div class="fg s2"><label>Cliente</label><input type="text" id="fCliente" placeholder="Nombre del comprador"></div>
+      <div class="fg"><label>Fecha</label><input type="date" id="fFecha"></div>
+
+      <div class="fg"><label>Monto cobrado ahora</label>
+        <div class="mw">
+          <input type="number" id="fMonto" placeholder="Lo que pagó hoy" min="0" step=".01">
+          <div class="mt">
+            <button class="mb a-ars" onclick="setMoneda('ARS',this)">ARS</button>
+            <button class="mb" onclick="setMoneda('USD',this)">USD</button>
+          </div>
+        </div>
+      </div>
+      <div class="fg"><label>Categoría</label>
+        <div class="tr">
+          <button class="tb" onclick="setT('cat','clase',this)">Clase · 2%</button>
+          <button class="tb" onclick="setT('cat','seguimiento',this)">Seg. · 18%</button>
+        </div>
+      </div>
+      <div class="fg"><label>Tipo de producto</label>
+        <div class="tr">
+          <button class="tb" onclick="setT('prod','inscripcion',this)">Inscripción · $197</button>
+          <button class="tb" onclick="setT('prod','downsell',this)">Downsell · $55</button>
+        </div>
+      </div>
+
+      <div class="fg sf"><label>Tipo de pago</label>
+        <div class="tr">
+          <button class="tb" onclick="setT('pago','sena',this)" style="flex:1">Seña</button>
+          <button class="tb" onclick="setT('pago','payfull',this)" style="flex:1">Pay Full</button>
+          <button class="tb" onclick="setT('pago','completando',this)" style="flex:1">Completando pago</button>
+        </div>
+      </div>
+
+      <!-- Completando pago: elegir persona + vista previa del pago anterior -->
+      <div class="erow comp" id="compRow" style="grid-template-columns:1fr 1fr">
+        <div class="fg"><label>Persona que completa pago</label>
+          <select id="fCompPersona" onchange="onCompPersonaChange()"><option value="">— Seleccioná —</option></select>
+          <div class="fhint" style="color:var(--orange)">Solo personas con saldo pendiente</div>
+        </div>
+        <div class="fg"><label>Saldo restante antes de este pago</label>
+          <input type="text" id="fCompSaldo" readonly style="opacity:.7;cursor:default" value="—">
+        </div>
+      </div>
+      <!-- Vista previa del pago anterior (solo aparece al elegir persona) -->
+      <div class="erow comp" id="compPreviewRow" style="grid-template-columns:1fr;padding:14px 16px">
+        <div id="compPreviewContent" style="font-size:.82rem;color:var(--text-dim);line-height:1.6">
+          <em style="color:var(--text-muted)">Seleccioná una persona para ver el detalle del pago anterior</em>
+        </div>
+      </div>
+
+      <!-- Cotización siempre visible -->
+      <div class="erow cotiz show" id="cotizRow">
+        <div class="fg"><label>Cotización USD / ARS</label><input type="number" id="fCotiz" placeholder="Ej: 1200" min="0" step="1"><div class="fhint" style="color:var(--cyan)">Valor del dólar hoy</div></div>
+        <div class="fg"><label>Cobrado equivalente</label><input type="text" id="fEquivPrev" readonly style="opacity:.7;cursor:default" value="—"><div class="fhint" style="color:var(--cyan)">El otro lado (USD o ARS)</div></div>
+        <div class="fg"><label>Neto cobrado (-7%)</label><input type="text" id="fNetoPrev" readonly style="opacity:.7;cursor:default" value="—"><div class="fhint" style="color:var(--orange)">Base para tu comisión</div></div>
+      </div>
+
+      <!-- Ticket row (seña, USD, o siempre que no sea completando) -->
+      <div class="erow ticket" id="ticketRow">
+        <div class="fg"><label>Ticket total real USD</label><input type="number" id="fTicketUsd" placeholder="Auto" min="0" max="197" step=".01"><div class="fhint" style="color:var(--usd)">Se autocompleta según producto</div></div>
+        <div class="fg"><label>Ticket total ARS</label><input type="text" id="fTicketArsPrev" readonly style="opacity:.7;cursor:default" value="—"></div>
+        <div class="fg"><label>Cash collected equiv.</label><input type="text" id="fCashPrev" readonly style="opacity:.7;cursor:default" value="—"></div>
+      </div>
+
+      <!-- Seña: fecha + saldos -->
+      <div class="erow sena" id="senaRow">
+        <div class="fg"><label>Fecha completar pago</label><input type="date" id="fFechaPago"><div class="fhint" style="color:var(--pink)">¿Cuándo debe pagar?</div></div>
+        <div class="fg"><label>Saldo pendiente USD</label><input type="text" id="fSaldoUsd" readonly style="opacity:.7;cursor:default" value="—"></div>
+        <div class="fg"><label>Saldo pendiente ARS</label><input type="text" id="fSaldoArs" readonly style="opacity:.7;cursor:default" value="—"></div>
+      </div>
+
+      <!-- Comisión dual (señas) -->
+      <div class="cdual" id="comDual">
+        <div class="csim sc"><span class="csl">Si es CLASE (2%)</span><span class="csv" id="simClase">$0</span></div>
+        <div class="csim ss"><span class="csl">Si es SEGUIMIENTO (18%)</span><span class="csv" id="simSeg">$0</span></div>
+      </div>
+
+      <!-- Link ManyChat + Transcripción -->
+      <div class="erow link-row show" id="linkRow" style="grid-template-columns:1fr 1fr">
+        <div class="fg"><label>Link ManyChat</label><input type="url" id="fLink" placeholder="https://manychat.com/..."><div class="fhint" style="color:var(--purple)">URL de la conversación</div></div>
+        <div class="fg"><label>Transcripción / Notas</label><textarea id="fTranscripcion" placeholder="Pegá acá la transcripción del chat..."></textarea></div>
+      </div>
+
+      <!-- Preview -->
+      <div class="pvbar">
+        <div class="pvi"><div class="pvl">Comisión</div><div class="pvv c-a" id="pvCom">$0</div></div>
+        <div class="pvd"></div>
+        <div class="pvi"><div class="pvl">Bruto ARS</div><div class="pvv c-g" id="pvBruto">$0</div></div>
+        <div class="pvd"></div>
+        <div class="pvi"><div class="pvl">Ticket USD</div><div class="pvv c-u" id="pvTicket">—</div></div>
+        <div class="pvd"></div>
+        <div class="pvi"><div class="pvl">Cash (ARS)</div><div class="pvv" style="color:var(--blue)" id="pvCash">$0</div></div>
+      </div>
+
+      <button class="btn-main" id="btnSubmit" onclick="guardarVenta()">+ Registrar Venta</button>
+      <button class="btn-cancel" id="btnCancel" onclick="cancelEdit()">Cancelar edición</button>
+    </div>
+  </div>
+
+  <!-- Recent sales mini-table -->
+  <div class="tbox">
+    <div class="ttop"><div class="stitle" id="recentTitle">Últimas 5 ventas</div></div>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Fecha</th><th>Cliente</th><th>Cobrado</th><th>Tipo</th><th>Cat.</th><th>Pago</th><th>Comisión</th><th></th></tr></thead>
+        <tbody id="recentBody"></tbody>
+      </table>
+      <div class="empty" id="recentEmpty"><div class="ei">📊</div><p>No hay ventas aún</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 1: SALDOS PENDIENTES ============ -->
+<div class="tab-content" id="tab1">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div class="stitle" style="margin:0">Personas con saldo pendiente</div>
+    <button onclick="abrirChatsSaldos()" style="padding:10px 18px;background:var(--purple-dim);border:1px solid rgba(179,136,255,.3);border-radius:10px;color:var(--purple);font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px" onmouseover="this.style.background='rgba(179,136,255,.2)'" onmouseout="this.style.background='var(--purple-dim)'">
+      💬 Abrir todos los chats
+    </button>
+  </div>
+  <div id="saldosList"></div>
+  <div class="empty" id="saldosEmpty"><div class="ei">✅</div><p>No hay saldos pendientes. ¡Todo cobrado!</p></div>
+</div>
+
+<!-- ============ TAB 2: HISTORIAL ============ -->
+<div class="tab-content" id="tab2">
+  <div class="tbox">
+    <div class="ttop">
+      <div class="stitle">Historial completo</div>
+      <div class="filters">
+        <div class="fgroup"><span class="flabel">Desde</span><input type="date" id="hDesde" onchange="renderHist()"></div>
+        <div class="fgroup"><span class="flabel">Hasta</span><input type="date" id="hHasta" onchange="renderHist()"></div>
+        <select id="hCat" onchange="renderHist()"><option value="t">Todas</option><option value="clase">Clase</option><option value="seguimiento">Seg.</option></select>
+        <select id="hMon" onchange="renderHist()"><option value="t">ARS+USD</option><option value="ARS">ARS</option><option value="USD">USD</option></select>
+        <select id="hPago" onchange="renderHist()"><option value="t">Todos</option><option value="sena">Seña</option><option value="payfull">Full</option><option value="completando">Comp.</option><option value="pagado">Pagado</option></select>
+        <button class="btn-sm btn-csv" onclick="exportCSV()">⬇ CSV</button>
+        <button class="btn-sm btn-dng" onclick="borrarTodo()">Borrar todo</button>
+      </div>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead><tr>
+          <th>Fecha</th><th>Cliente</th><th>Cobrado</th><th>$</th><th>Ticket</th><th>Cotiz.</th>
+          <th>Bruto</th><th>Neto</th><th>Saldo</th><th>Prod.</th><th>Cat.</th><th>Pago</th><th>Com.</th><th></th>
+        </tr></thead>
+        <tbody id="histBody"></tbody>
+      </table>
+      <div class="empty" id="histEmpty"><div class="ei">📊</div><p>No hay ventas</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 3: HISTÓRICO MENSUAL ============ -->
+<div class="tab-content" id="tab3">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div class="stitle" style="margin:0">📚 Resumen por mes</div>
+    <div style="font-size:.72rem;color:var(--text-muted)">Comisiones, ventas y saldos agrupados por mes</div>
+  </div>
+  
+  <!-- Stats anuales -->
+  <div class="sgrid" style="margin-bottom:24px">
+    <div class="scard"><div class="si">📅</div><div class="sl">Meses con ventas</div><div class="sv c-c" id="hmMesesCount">0</div></div>
+    <div class="scard"><div class="si">💰</div><div class="sl">Comisión año actual</div><div class="sv c-a" id="hmComAnual">$0</div></div>
+    <div class="scard"><div class="si">🏆</div><div class="sl">Mejor mes</div><div class="sv c-g" id="hmMejorMes" style="font-size:.95rem">—</div><div class="ss c-o" id="hmMejorMonto"></div></div>
+    <div class="scard"><div class="si">📈</div><div class="sl">Promedio mensual</div><div class="sv" style="color:var(--blue);font-size:1.05rem" id="hmPromedio">$0</div></div>
+  </div>
+  
+  <div id="monthlyList"></div>
+  <div class="empty" id="monthlyEmpty"><div class="ei">📚</div><p>No hay ventas registradas todavía</p></div>
+</div>
+
+<!-- ============ TAB 4: POTENCIALES ============ -->
+<div class="tab-content" id="tab4">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+    <div class="stitle" style="margin:0">🎯 Potenciales activos</div>
+    <a href="http://localhost:8765/agenda-lead.html" target="_blank" style="padding:9px 18px;background:var(--accent-dim);border:1px solid var(--accent);border-radius:10px;color:var(--accent);font-size:.75rem;font-weight:700;text-decoration:none">+ Agregar en Agendar Lead →</a>
+  </div>
+  
+  <!-- Stats -->
+  <div class="sgrid" style="margin-bottom:20px">
+    <div class="scard"><div class="si">🎯</div><div class="sl">Total activos</div><div class="sv c-a" id="ptTotal">—</div></div>
+    <div class="scard"><div class="si">🔴</div><div class="sl">Vencidos / Hoy</div><div class="sv" style="color:var(--red)" id="ptLate">—</div></div>
+    <div class="scard"><div class="si">🟡</div><div class="sl">Próximos 2 días</div><div class="sv" style="color:var(--gold)" id="ptSoon">—</div></div>
+    <div class="scard"><div class="si">🟢</div><div class="sl">Sin urgencia</div><div class="sv" style="color:var(--usd)" id="ptOk">—</div></div>
+  </div>
+
+  <!-- Por etapa -->
+  <div id="ptStages" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;min-height:300px">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);font-size:.85rem">
+      <div style="font-size:1.5rem;margin-bottom:8px">⏳</div>
+      Cargando desde Supabase...
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 5: TRANSCRIPCIONES ============ -->
+<div class="tab-content" id="tab5">
+  <input type="text" class="search-bar" id="transSearch" placeholder="Buscar por nombre de cliente..." oninput="renderTrans()">
+  <div class="filters" style="margin-bottom:16px">
+    <div class="fgroup"><span class="flabel">Desde</span><input type="date" id="tDesde" onchange="renderTrans()"></div>
+    <div class="fgroup"><span class="flabel">Hasta</span><input type="date" id="tHasta" onchange="renderTrans()"></div>
+    <button class="btn-sm btn-csv" onclick="exportTrans()">⬇ Exportar transcripciones</button>
+  </div>
+  <div id="transList"></div>
+  <div class="empty" id="transEmpty"><div class="ei">📝</div><p>No hay transcripciones guardadas</p></div>
+</div>
+
+</div>
+
+<script>
+/* =====================================================================
+   ComisionesTracker PRO v6
+   - 4 tabs: Dashboard, Saldos, Historial, Transcripciones
+   - Productos: Inscripción ($197) / Downsell ($55)
+   - Pagos: Seña / Pay Full / Completando Pago
+   - Comisión sobre cada pago que entra (neto -7%)
+   - ManyChat links + transcripciones por venta
+   - Pagos parciales (cuotas) vinculados al registro original
+   ===================================================================== */
+
+let ventas = JSON.parse(localStorage.getItem('tracker_v6') || '[]');
+
+// Migración desde versiones anteriores
+if (!ventas.length) {
+  for (const k of ['comisiones_v5','comisiones_v4','comisiones_v3']) {
+    const old = JSON.parse(localStorage.getItem(k) || '[]');
+    if (old.length) {
+      ventas = old.map(v => ({
+        id: v.id, cliente: v.cliente || '', fecha: v.fecha || '',
+        moneda: v.moneda || 'ARS', monto: v.monto || 0,
+        cotiz: v.cotiz || null,
+        prod: 'inscripcion',
+        ticketUsd: v.ticketUsd || v.ticket || 197,
+        ticketArs: v.ticketArs || 0,
+        cobradoUsd: v.cobradoUsd || 0, cobradoArs: v.cobradoArs || 0,
+        netoArs: v.netoArs || 0,
+        cat: v.cat || 'seguimiento', pago: v.pago || 'payfull',
+        pct: v.pct || .18, comision: v.comision || 0,
+        comClase: v.comisionClase || 0, comSeg: v.comisionSeg || 0,
+        fechaPago: v.fechaCompletarPago || null,
+        saldoUsd: v.saldoUsd || null, saldoArs: v.saldoArs || null,
+        link: '', transcripcion: '',
+        parentId: null, // para pagos parciales: apunta al registro original
+        pagos: [] // array de ids de pagos parciales vinculados
+      }));
+      save(); break;
+    }
+  }
+}
+
+let sel = { cat: null, pago: null, moneda: 'ARS', prod: null };
+let editingId = null;
+
+document.getElementById('fFecha').valueAsDate = new Date();
+
+// === TABS ===
+function switchTab(n) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===n));
+  document.querySelectorAll('.tab-content').forEach((c,i) => c.classList.toggle('active', i===n));
+  if (n===1) renderSaldos();
+  if (n===2) renderHist();
+  if (n===3) renderMonthly();
+  if (n===4) renderPotencialesTracker();
+  if (n===5) renderTrans();
+}
+
+// === TOGGLES ===
+function setMoneda(v, btn) {
+  document.querySelectorAll('.mb').forEach(b => b.className='mb');
+  btn.classList.add(v==='ARS'?'a-ars':'a-usd');
+  sel.moneda = v;
+  document.getElementById('fMonto').placeholder = v==='USD' ? 'Lo que pagó en USD' : 'Lo que pagó en ARS';
+  updVis(); updPrev();
+}
+
+function setT(type, val, btn) {
+  // Clear same-group toggles
+  btn.parentElement.querySelectorAll('.tb').forEach(b => b.className='tb');
+  const cls = {cat:{clase:'a-clase',seguimiento:'a-seg'},prod:{inscripcion:'a-payfull',downsell:'a-ds'},pago:{sena:'a-sena',payfull:'a-payfull',completando:'a-comp'}};
+  btn.classList.add(cls[type]?.[val] || '');
+  sel[type] = val;
+
+  // Auto-set ticket based on product
+  if (type === 'prod') {
+    const ticketInput = document.getElementById('fTicketUsd');
+    ticketInput.value = val === 'downsell' ? 55 : 197;
+  }
+
+  // Populate completando dropdown
+  if (type === 'pago' && val === 'completando') {
+    populateCompDropdown();
+  }
+
+  updVis(); updPrev();
+}
+
+function updVis() {
+  const esSena = sel.pago === 'sena';
+  const esComp = sel.pago === 'completando';
+  const esUSD = sel.moneda === 'USD';
+
+  document.getElementById('ticketRow').classList.toggle('show', !esComp && (esSena || esUSD || sel.prod));
+  document.getElementById('senaRow').classList.toggle('show', esSena);
+  document.getElementById('comDual').classList.toggle('show', esSena);
+  document.getElementById('compRow').classList.toggle('show', esComp);
+  document.getElementById('compPreviewRow').classList.toggle('show', esComp);
+}
+
+// === POPULATE "COMPLETANDO PAGO" DROPDOWN ===
+function populateCompDropdown() {
+  const select = document.getElementById('fCompPersona');
+  select.innerHTML = '<option value="">— Seleccioná —</option>';
+  getPendientes().forEach(p => {
+    const montoInfo = p.moneda==='USD'?`U$D ${fm(p.monto)}`:`$ ${fm(p.monto)}`;
+    select.innerHTML += `<option value="${p.id}">${p.cliente} — Seña: ${montoInfo} (${ff(p.fecha)}) — Debe: U$D ${fm(p.saldoUsd||0)}</option>`;
+  });
+}
+
+function onCompPersonaChange() {
+  const id = parseInt(document.getElementById('fCompPersona').value);
+  const v = ventas.find(x => x.id === id);
+  const preview = document.getElementById('compPreviewContent');
+
+  if (v) {
+    document.getElementById('fCompSaldo').value = `U$D ${fm(v.saldoUsd||0)} / $ ${fm(v.saldoArs||0)}`;
+    document.getElementById('fCliente').value = v.cliente;
+    if (v.cotiz) document.getElementById('fCotiz').value = v.cotiz;
+    sel.cat = v.cat;
+    sel.prod = v.prod || 'inscripcion';
+    document.getElementById('fTicketUsd').value = v.ticketUsd || 197;
+
+    // Build previous payment preview
+    const pagosAnteriores = (v.pagos||[]).map(pid => ventas.find(x=>x.id===pid)).filter(Boolean);
+    let html = `<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px">`;
+    html += `<div style="font-weight:700;color:var(--orange);font-size:.75rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📋 Pago anterior de ${v.cliente}</div>`;
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">`;
+    html += `<div><div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Fecha seña</div><div style="font-family:'JetBrains Mono';font-weight:600;color:var(--text)">${ff(v.fecha)}</div></div>`;
+    html += `<div><div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Cobró (seña)</div><div style="font-family:'JetBrains Mono';font-weight:600;color:var(--accent)">${v.moneda==='USD'?'U$D ':'$ '}${fm(v.monto)}</div></div>`;
+    html += `<div><div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Ticket total</div><div style="font-family:'JetBrains Mono';font-weight:600;color:var(--usd)">U$D ${fm(v.ticketUsd||0)}</div></div>`;
+    html += `<div><div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Categoría</div><div style="font-weight:600;color:${v.cat==='clase'?'var(--gold)':'var(--cyan)'}">${v.cat==='clase'?'Clase (2%)':'Seguimiento (18%)'}</div></div>`;
+    html += `</div>`;
+    if (v.cotiz) {
+      html += `<div style="margin-top:8px;font-size:.75rem;color:var(--text-dim)">Cotización usada: <span style="color:var(--cyan)">$ ${fm(v.cotiz)}</span> · Cobrado en ARS: <span style="color:var(--text)">$ ${fm(v.cobradoArs||0)}</span></div>`;
+    }
+    if (pagosAnteriores.length) {
+      html += `<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;font-size:.72rem;color:var(--text-dim)">Pagos parciales anteriores: `;
+      html += pagosAnteriores.map(p => `${ff(p.fecha)} · $ ${fm(p.cobradoArs||0)}`).join(' | ');
+      html += `</div>`;
+    }
+    html += `<div style="margin-top:8px;font-size:.8rem;font-weight:700;color:var(--pink)">Saldo pendiente: U$D ${fm(v.saldoUsd||0)} / $ ${fm(v.saldoArs||0)}</div>`;
+    html += `</div>`;
+    preview.innerHTML = html;
+  } else {
+    document.getElementById('fCompSaldo').value = '—';
+    preview.innerHTML = '<em style="color:var(--text-muted)">Seleccioná una persona para ver el detalle del pago anterior</em>';
+  }
+  updPrev();
+}
+
+function getPendientes() {
+  return ventas.filter(v =>
+    v.pago === 'sena' &&
+    v.saldoUsd > 0.01 &&
+    !v.parentId // solo registros originales, no pagos parciales
+  );
+}
+
+// === CALCULO CENTRAL ===
+function calc(inp) {
+  const { moneda, monto, cotiz, ticketUsdIn, cat, pago, prod } = inp;
+  let cobU=0, cobA=0;
+  if (moneda==='USD') { cobU=monto; cobA=cotiz>0?monto*cotiz:0; }
+  else { cobA=monto; cobU=cotiz>0?monto/cotiz:0; }
+
+  let tU = ticketUsdIn || (prod==='downsell'?55:197);
+  let tA = tU && cotiz>0 ? tU*cotiz : 0;
+
+  if (pago==='payfull') { tU=cobU||tU; tA=cobA||tA; }
+
+  const netA = cobA * .93;
+  const netU = cobU * .93;
+  const cClase = netA * .02;
+  const cSeg = netA * .18;
+  const pct = cat==='clase'?.02:cat==='seguimiento'?.18:0;
+  const com = netA * pct;
+
+  let sU=null, sA=null;
+  if (pago==='sena' && tU>0) {
+    sU = Math.max(0, tU - cobU);
+    sA = cotiz>0 ? sU*cotiz : Math.max(0, tA - cobA);
+  }
+
+  return { cobU, cobA, tU, tA, netA, netU, cClase, cSeg, com, pct, sU, sA };
+}
+
+// === PREVIEW ===
+function updPrev() {
+  const monto = parseFloat(document.getElementById('fMonto').value)||0;
+  const cotiz = parseFloat(document.getElementById('fCotiz').value)||0;
+  const tIn = parseFloat(document.getElementById('fTicketUsd').value)||0;
+
+  const r = calc({ moneda:sel.moneda, monto, cotiz, ticketUsdIn:tIn, cat:sel.cat, pago:sel.pago, prod:sel.prod });
+
+  document.getElementById('fEquivPrev').value = sel.moneda==='USD' ? (r.cobA>0?`$ ${fm(r.cobA)} ARS`:'—') : (r.cobU>0?`U$D ${fm(r.cobU)}`:'—');
+  document.getElementById('fNetoPrev').value = r.netA>0?`$ ${fm(r.netA)} ARS`:'—';
+  document.getElementById('fTicketArsPrev').value = r.tA>0?`$ ${fm(r.tA)} ARS`:'—';
+  document.getElementById('fCashPrev').value = r.cobA>0&&r.cobU>0?`U$D ${fm(r.cobU)} / $ ${fm(r.cobA)}`:'—';
+  document.getElementById('fSaldoUsd').value = r.sU!==null?`U$D ${fm(r.sU)}`:'—';
+  document.getElementById('fSaldoArs').value = r.sA!==null?`$ ${fm(r.sA)} ARS`:'—';
+  document.getElementById('simClase').textContent = `$ ${fm(r.cClase)}`;
+  document.getElementById('simSeg').textContent = `$ ${fm(r.cSeg)}`;
+  document.getElementById('pvCom').textContent = `$ ${fm(r.com)}`;
+  document.getElementById('pvBruto').textContent = `$ ${fm(r.cobA)}`;
+  document.getElementById('pvTicket').textContent = r.tU>0?`U$D ${fm(r.tU)}`:'—';
+  document.getElementById('pvCash').textContent = `$ ${fm(r.cobA)}`;
+}
+
+['fMonto','fTicketUsd','fCotiz'].forEach(id => document.getElementById(id).addEventListener('input', updPrev));
+
+// === GUARDAR VENTA ===
+function guardarVenta() {
+  const cliente = document.getElementById('fCliente').value.trim();
+  const fecha = document.getElementById('fFecha').value;
+  const monto = parseFloat(document.getElementById('fMonto').value);
+  const cotiz = parseFloat(document.getElementById('fCotiz').value)||0;
+  const tIn = parseFloat(document.getElementById('fTicketUsd').value)||0;
+  const link = document.getElementById('fLink').value.trim();
+  const trans = document.getElementById('fTranscripcion').value.trim();
+
+  if (!cliente) return alert('Ingresá el nombre del cliente');
+  if (!fecha) return alert('Seleccioná la fecha');
+  if (!monto||monto<=0) return alert('Ingresá un monto válido');
+  if (!sel.cat) return alert('Seleccioná categoría');
+  if (!sel.pago) return alert('Seleccioná tipo de pago');
+  if (!sel.prod) return alert('Seleccioná tipo de producto');
+
+  // Validaciones específicas
+  if (sel.pago==='sena') {
+    if (!tIn||tIn<=0) return alert('En una seña debés cargar el ticket total en USD');
+    if (!cotiz||cotiz<=0) return alert('Ingresá la cotización');
+  }
+  if (sel.moneda==='USD'&&(!cotiz||cotiz<=0)) return alert('Ingresá la cotización del dólar');
+
+  const r = calc({ moneda:sel.moneda, monto, cotiz, ticketUsdIn:tIn, cat:sel.cat, pago:sel.pago, prod:sel.prod });
+
+  // Completando pago: vincular al original y actualizar saldo
+  let parentId = null;
+  if (sel.pago === 'completando') {
+    parentId = parseInt(document.getElementById('fCompPersona').value);
+    if (!parentId) return alert('Seleccioná la persona que completa pago');
+    const parent = ventas.find(v => v.id === parentId);
+    if (parent) {
+      parent.saldoUsd = Math.max(0, (parent.saldoUsd||0) - r.cobU);
+      parent.saldoArs = Math.max(0, (parent.saldoArs||0) - r.cobA);
+      if (!parent.pagos) parent.pagos = [];
+      // If saldo is now 0, mark as pagado (auto-complete)
+      if (parent.saldoUsd < 0.01) {
+        const nombre = parent.cliente.trim().toLowerCase();
+        ventas.filter(x => x.cliente.trim().toLowerCase() === nombre && x.pago === 'sena').forEach(x => {
+          x.pago = 'pagado';
+          x.saldoUsd = 0;
+          x.saldoArs = 0;
+        });
+      }
+    }
+  }
+
+  const fechaPago = sel.pago==='sena' ? (document.getElementById('fFechaPago').value||null) : null;
+
+  const reg = {
+    id: editingId || Date.now(),
+    cliente, fecha,
+    moneda: sel.moneda, monto,
+    cotiz: cotiz||null,
+    prod: sel.prod,
+    ticketUsd: r.tU, ticketArs: r.tA,
+    cobradoUsd: r.cobU, cobradoArs: r.cobA,
+    netoArs: r.netA,
+    cat: sel.cat, pago: sel.pago, pct: r.pct,
+    comision: r.com, comClase: r.cClase, comSeg: r.cSeg,
+    fechaPago,
+    saldoUsd: r.sU, saldoArs: r.sA,
+    link, transcripcion: trans,
+    parentId,
+    pagos: []
+  };
+
+  if (editingId) {
+    const idx = ventas.findIndex(v => v.id === editingId);
+    if (idx >= 0) {
+      // Preservar campos de Notion que no se editan en el form
+      const old = ventas[idx];
+      reg.pagos = old.pagos;
+      reg.notion_id = old.notion_id;
+      reg.notion_estado = old.notion_estado;
+      reg.notion_pago = old.notion_pago;
+      reg.notion_datos = old.notion_datos;
+      reg.notion_completo_pago = old.notion_completo_pago;
+      reg.notion_last_sync = old.notion_last_sync;
+      // Si tenía needs_completion y ahora tiene monto cargado, ya no lo necesita
+      reg.needs_completion = (old.needs_completion && monto > 0) ? false : old.needs_completion;
+      ventas[idx] = reg;
+    }
+    cancelEdit();
+  } else {
+    ventas.push(reg);
+    // Link to parent if completando
+    if (parentId) {
+      const parent = ventas.find(v => v.id === parentId);
+      if (parent) parent.pagos.push(reg.id);
+    }
+  }
+
+  save(); clearForm(); renderAll();
+}
+
+function clearForm() {
+  ['fCliente','fMonto','fTicketUsd','fCotiz','fLink','fTranscripcion','fFechaPago'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.tagName==='TEXTAREA'||el.tagName==='INPUT') el.value = '';
+  });
+  document.getElementById('fFecha').valueAsDate = new Date();
+  ['fEquivPrev','fNetoPrev','fTicketArsPrev','fCashPrev','fSaldoUsd','fSaldoArs','fCompSaldo'].forEach(id => document.getElementById(id).value='—');
+  document.querySelectorAll('.tb,.mb').forEach(b => b.className = b.classList.contains('mb')?'mb':'tb');
+  document.querySelector('.mb').classList.add('a-ars');
+  sel = { cat:null, pago:null, moneda:'ARS', prod:null };
+  updVis();
+  ['pvCom','pvBruto','pvCash'].forEach(id => document.getElementById(id).textContent='$0');
+  document.getElementById('pvTicket').textContent='—';
+  document.getElementById('simClase').textContent='$0';
+  document.getElementById('simSeg').textContent='$0';
+}
+
+function editVenta(id) {
+  const v = ventas.find(x => x.id===id);
+  if (!v) return;
+  editingId = id;
+  document.getElementById('fCliente').value = v.cliente;
+  document.getElementById('fFecha').value = v.fecha;
+  document.getElementById('fMonto').value = v.monto;
+  document.getElementById('fCotiz').value = v.cotiz||'';
+  document.getElementById('fTicketUsd').value = v.ticketUsd||'';
+  document.getElementById('fFechaPago').value = v.fechaPago||'';
+  document.getElementById('fLink').value = v.link||'';
+  document.getElementById('fTranscripcion').value = v.transcripcion||'';
+
+  // Set moneda visually
+  sel.moneda = v.moneda;
+  document.querySelectorAll('.mb').forEach(b => b.className='mb');
+  document.querySelectorAll('.mb')[v.moneda==='ARS'?0:1].classList.add(v.moneda==='ARS'?'a-ars':'a-usd');
+
+  // Set ALL toggle buttons visually (cat, prod, pago)
+  sel.cat = v.cat; sel.prod = v.prod||'inscripcion'; sel.pago = v.pago;
+  document.querySelectorAll('.tb').forEach(b => b.className='tb');
+
+  // Find and activate correct buttons by scanning their text content
+  document.querySelectorAll('.tb').forEach(btn => {
+    const txt = btn.textContent.trim().toLowerCase();
+    if (v.cat==='clase' && txt.includes('clase')) btn.classList.add('a-clase');
+    if (v.cat==='seguimiento' && (txt.includes('seg') || txt.includes('18'))) btn.classList.add('a-seg');
+    if ((v.prod||'inscripcion')==='inscripcion' && txt.includes('197')) btn.classList.add('a-payfull');
+    if (v.prod==='downsell' && txt.includes('55')) btn.classList.add('a-ds');
+    if (v.pago==='sena' && txt.includes('seña')) btn.classList.add('a-sena');
+    if (v.pago==='payfull' && txt.includes('pay full')) btn.classList.add('a-payfull');
+    if (v.pago==='completando' && txt.includes('completando')) btn.classList.add('a-comp');
+  });
+
+  updVis(); updPrev();
+
+  document.getElementById('editBanner').classList.add('show');
+  document.getElementById('formTitle').classList.add('edit-mode');
+  document.getElementById('formTitle').textContent = 'Editando: ' + v.cliente;
+  document.getElementById('btnSubmit').classList.add('edit-mode');
+  document.getElementById('btnSubmit').textContent = '✓ Guardar cambios';
+  document.getElementById('btnCancel').style.display = 'block';
+
+  switchTab(0);
+  document.querySelector('.form-box').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function cancelEdit() {
+  editingId = null;
+  document.getElementById('editBanner').classList.remove('show');
+  document.getElementById('formTitle').classList.remove('edit-mode');
+  document.getElementById('formTitle').textContent = 'Registrar venta';
+  document.getElementById('btnSubmit').classList.remove('edit-mode');
+  document.getElementById('btnSubmit').textContent = '+ Registrar Venta';
+  document.getElementById('btnCancel').style.display = 'none';
+  clearForm();
+}
+
+function eliminar(id) {
+  if (!confirm('¿Eliminar esta venta?')) return;
+  ventas = ventas.filter(v => v.id!==id);
+  if (editingId===id) cancelEdit();
+  save(); renderAll();
+}
+
+function borrarTodo() {
+  if (!confirm('¿Borrar TODAS las ventas?')) return;
+  ventas = []; save(); renderAll();
+}
+
+function save() { localStorage.setItem('tracker_v6', JSON.stringify(ventas)); }
+
+// === RENDER ALL ===
+function renderAll() {
+  renderDash();
+  updateSaldosBadge();
+  updateNeedsCompletionBanner();
+  // Update quick action badge
+  const pendCount = getPendientes().length;
+  const qaBadge = document.getElementById('qaSenaBadge');
+  if (pendCount > 0) { qaBadge.textContent = pendCount; qaBadge.style.display = 'inline-block'; }
+  else { qaBadge.style.display = 'none'; }
+}
+
+function updateNeedsCompletionBanner() {
+  const banner = document.getElementById('needsCompletionBanner');
+  if (!banner) return;
+  const pending = ventas.filter(v => v.needs_completion);
+  if (pending.length === 0) {
+    banner.style.display = 'none';
+    return;
+  }
+  banner.style.display = 'flex';
+  document.getElementById('needsCompletionCount').textContent = pending.length;
+}
+
+function abrirPendientesParaCompletar() {
+  const pending = ventas.filter(v => v.needs_completion).sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+  if (!pending.length) return;
+  // Ir a historial filtrado, y abrir el primero en Notion
+  switchTab(2);
+  // Pequeño delay para que se renderice
+  setTimeout(() => {
+    completarDesdeNotion(pending[0].id);
+  }, 200);
+}
+
+// Quick action: open all ManyChat links from pending señas
+function irASeñasManyChat() {
+  const pend = getPendientes().filter(v => v.link);
+  if (!pend.length) {
+    alert('No hay señas pendientes con links de ManyChat cargados');
+    return;
+  }
+  if (pend.length > 5 && !confirm(`Vas a abrir ${pend.length} chats de ManyChat. ¿Seguro?`)) return;
+  pend.forEach(v => window.open(v.link, '_blank'));
+}
+
+// Abrir todos los chats de saldos pendientes (desde Tab Saldos)
+function abrirChatsSaldos() {
+  const pend = getPendientes().filter(v => v.link);
+  if (!pend.length) {
+    alert('No hay saldos pendientes con link de ManyChat cargado.\n\nTip: podés agregar el link desde ✎ Editar en cada venta.');
+    return;
+  }
+  if (pend.length > 5 && !confirm(`Vas a abrir ${pend.length} chats. ¿Seguro?`)) return;
+  pend.forEach(v => window.open(v.link, '_blank'));
+}
+
+function renderDash() {
+  // Aplicar filtro de mes seleccionado (o mostrar todos)
+  const data = showAllMonths ? ventas : getVentasByMonth(currentMonth);
+  const total = data.length;
+  const facBruta = data.reduce((s,v) => s+(v.cobradoArs||0), 0);
+  const comTotal = data.reduce((s,v) => s+(v.comision||0), 0);
+  const comBruta = data.reduce((s,v) => s+(v.cobradoArs||0)*(v.pct||0), 0);
+  const cash = data.filter(v=>v.pago==='payfull'||v.pago==='completando').reduce((s,v)=>s+(v.cobradoArs||0),0);
+  const cClase = data.filter(v=>v.cat==='clase').reduce((s,v)=>s+(v.comision||0),0);
+  const cSeg = data.filter(v=>v.cat==='seguimiento').reduce((s,v)=>s+(v.comision||0),0);
+  const tUsd = data.filter(v=>!v.parentId).reduce((s,v)=>s+(v.ticketUsd||0),0);
+  // Saldos pendientes: siempre TODOS, no por mes (porque vienen de meses anteriores)
+  const saldos = getPendientes().reduce((s,v)=>s+(v.saldoUsd||0),0);
+
+  document.getElementById('sVentas').textContent = total;
+  document.getElementById('sComision').textContent = '$ '+fm(comTotal);
+  document.getElementById('sComBruto').textContent = 'Sin 7%: $ '+fm(comBruta);
+  document.getElementById('sFact').textContent = '$ '+fm(facBruta);
+  document.getElementById('sFactNeto').textContent = 'Neto: $ '+fm(facBruta*.93);
+  document.getElementById('sCash').textContent = '$ '+fm(cash);
+  document.getElementById('sClase').textContent = '$ '+fm(cClase);
+  document.getElementById('sSeg').textContent = '$ '+fm(cSeg);
+  document.getElementById('sUsd').textContent = 'U$D '+fm(tUsd);
+  document.getElementById('sSaldos').textContent = 'U$D '+fm(saldos);
+
+  // Recent 5 — siempre globales, no filtradas por mes
+  // Últimas 5 — del mes seleccionado, ordenadas por FECHA real (no por id)
+  const recent = [...(showAllMonths ? ventas : getVentasByMonth(currentMonth))]
+    .sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'') || b.id - a.id)
+    .slice(0,5);
+  const rb = document.getElementById('recentBody');
+  const re = document.getElementById('recentEmpty');
+  const recentTitle = document.getElementById('recentTitle');
+  if (recentTitle) {
+    recentTitle.textContent = showAllMonths 
+      ? `Últimas 5 ventas (de todos los meses)` 
+      : `Últimas 5 ventas de ${formatMonthLabel(currentMonth)}`;
+  }
+  if (!recent.length) { rb.innerHTML=''; re.style.display='block'; return; }
+  re.style.display='none';
+  rb.innerHTML = recent.map(v => {
+    const needsCompletion = v.needs_completion;
+    const rowStyle = needsCompletion ? 'background:rgba(255,152,0,.04);border-left:3px solid var(--orange)' : '';
+    return `<tr style="${rowStyle}">
+    <td>${ff(v.fecha)}</td>
+    <td>${v.cliente}${v.link?` <a href="${v.link}" target="_blank" style="color:var(--purple);text-decoration:none" title="Abrir ManyChat">🔗</a>`:''}${v.notion_id?` <a href="https://notion.so/${v.notion_id.replace(/-/g,'')}" target="_blank" style="color:var(--cyan);font-size:.65rem;text-decoration:none" title="Abrir en Notion">◉</a>`:''}${needsCompletion?` <span style="font-size:.55rem;padding:1px 6px;background:var(--orange-dim);color:var(--orange);border-radius:6px;font-weight:700;letter-spacing:.5px;margin-left:4px">COMPLETAR</span>`:''}</td>
+    <td class="mono">${v.moneda==='USD'?'U$D ':'$ '}${fm(v.monto)}</td>
+    <td><span class="badge ${v.prod==='downsell'?'b-ds':'b-payfull'}">${v.prod==='downsell'?'DS':'INSC'}</span></td>
+    <td><span class="badge b-${v.cat}">${v.cat==='clase'?'Clase':'Seg.'}</span></td>
+    <td><span class="badge b-${v.pago}">${v.pago==='sena'?'Seña':v.pago==='completando'?'Comp.':'Full'}</span></td>
+    <td class="mono c-a">$ ${fm(v.comision)}</td>
+    <td><div class="row-act">${needsCompletion?`<button class="ba" style="background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange)" onclick="completarDesdeNotion(${v.id})" title="Abrir Notion y editar">⚡</button>`:''}<button class="ba be" onclick="editVenta(${v.id})">✎</button><button class="ba bd" onclick="eliminar(${v.id})">✕</button></div></td>
+  </tr>`;
+  }).join('');
+}
+
+// === SALDOS PENDIENTES (Tab 1) ===
+function renderSaldos() {
+  const pend = getPendientes();
+  const container = document.getElementById('saldosList');
+  const empty = document.getElementById('saldosEmpty');
+
+  if (!pend.length) { container.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  const today = new Date().toISOString().slice(0,10);
+
+  container.innerHTML = pend.map(v => {
+    const overdue = v.fechaPago && v.fechaPago < today;
+    const pagosHechos = (v.pagos||[]).map(pid => ventas.find(x=>x.id===pid)).filter(Boolean);
+
+    return `<div class="saldo-card ${overdue?'overdue':''}">
+      <div>
+        <div class="sc-name">${v.cliente} ${overdue?'<span class="badge b-venc">VENCIDO</span>':''}</div>
+        <div class="sc-sub">Fecha venta: ${ff(v.fecha)} · ${v.prod==='downsell'?'Downsell':'Inscripción'} · ${v.cat==='clase'?'Clase':'Seg.'}</div>
+        <div class="sc-sub" style="color:var(--accent)">Seña cobrada: ${v.moneda==='USD'?'U$D ':'$ '}${fm(v.monto)} · ID: ${v.id.toString().slice(-4)}</div>
+        ${v.link?`<a href="${v.link}" target="_blank" style="color:var(--purple);font-size:.75rem;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-top:4px">🔗 Ver conversación</a>`:''}
+        ${pagosHechos.length?`<div style="margin-top:6px;font-size:.7rem;color:var(--text-dim)">Pagos parciales: ${pagosHechos.map(p=>`${ff(p.fecha)} · $ ${fm(p.cobradoArs)}`).join(' | ')}</div>`:''}
+      </div>
+      <div>
+        <div class="sc-sub">Saldo USD</div>
+        <div class="sc-amount c-p">U$D ${fm(v.saldoUsd||0)}</div>
+      </div>
+      <div>
+        <div class="sc-sub">Saldo ARS</div>
+        <div class="sc-amount c-p">$ ${fm(v.saldoArs||0)}</div>
+      </div>
+      <div>
+        <div class="sc-sub">Fecha límite</div>
+        <div class="sc-date ${overdue?'c-r':''}">${v.fechaPago?ff(v.fechaPago):'Sin fecha'}</div>
+      </div>
+      <div class="sc-actions" style="flex-direction:column;gap:6px">
+        ${v.link?`<a href="${v.link}" target="_blank" class="sc-btn" style="background:var(--purple-dim);border-color:rgba(179,136,255,.3);color:var(--purple);text-align:center;text-decoration:none;display:block">💬 Chat</a>`:''}
+        <button class="btn-sm" style="background:var(--accent-dim);border-color:rgba(0,212,170,.3);color:var(--accent)" onclick="registrarPagoParcial(${v.id})">+ Registrar pago</button>
+        <button class="btn-sm" style="background:var(--orange-dim);border-color:rgba(255,152,0,.3);color:var(--orange)" onclick="editVenta(${v.id})">✎ Editar</button>
+        <button class="btn-sm" style="background:var(--accent-dim);border-color:rgba(0,212,170,.3);color:var(--accent);font-size:.6rem" onclick="marcarCompleto(${v.id})">✓ Ya pagó todo</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function registrarPagoParcial(id) {
+  // Pre-fill form for "completando pago"
+  switchTab(0);
+  sel.pago = 'completando';
+  document.querySelectorAll('.tb').forEach(b=>b.className='tb');
+  // Need to trigger the completando button visually
+  populateCompDropdown();
+  document.getElementById('fCompPersona').value = id;
+  onCompPersonaChange();
+  updVis();
+  document.querySelector('.form-box').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// Marcar TODOS los registros de una persona como pagados (vincula por nombre)
+function marcarCompleto(id) {
+  const v = ventas.find(x => x.id === id);
+  if (!v) return;
+  const nombre = v.cliente.trim().toLowerCase();
+
+  // Find all records for this person
+  const registros = ventas.filter(x => x.cliente.trim().toLowerCase() === nombre);
+  const señas = registros.filter(x => x.pago === 'sena' && (x.saldoUsd > 0.01 || x.saldoArs > 0.01));
+
+  const msg = señas.length > 1
+    ? `${v.cliente} tiene ${señas.length} señas pendientes. ¿Marcar TODAS como pagadas?`
+    : `¿Confirmar que ${v.cliente} ya completó el pago total?`;
+
+  if (!confirm(msg)) return;
+
+  // Mark all records for this person: clear saldos, change seña → 'pagado'
+  registros.forEach(r => {
+    if (r.pago === 'sena') {
+      r.pago = 'pagado'; // New status: was seña, now fully paid
+      r.saldoUsd = 0;
+      r.saldoArs = 0;
+    }
+  });
+
+  save();
+  renderSaldos();
+  renderAll();
+  alert(`✅ ${v.cliente} marcado como PAGADO. Se actualizaron ${señas.length} registro(s).`);
+}
+
+function updateSaldosBadge() {
+  const count = getPendientes().length;
+  const badge = document.getElementById('saldosBadge');
+  if (count > 0) { badge.textContent = count; badge.style.display = 'block'; }
+  else { badge.style.display = 'none'; }
+}
+
+// === HISTORIAL (Tab 2) ===
+function getHistFiltered() {
+  let f = [...ventas];
+  const d1 = document.getElementById('hDesde').value;
+  const d2 = document.getElementById('hHasta').value;
+  const cat = document.getElementById('hCat').value;
+  const mon = document.getElementById('hMon').value;
+  const pago = document.getElementById('hPago').value;
+  if (d1) f=f.filter(v=>v.fecha>=d1);
+  if (d2) f=f.filter(v=>v.fecha<=d2);
+  if (cat!=='t') f=f.filter(v=>v.cat===cat);
+  if (mon!=='t') f=f.filter(v=>v.moneda===mon);
+  if (pago!=='t') f=f.filter(v=>v.pago===pago);
+  return f.sort((a,b)=>b.fecha.localeCompare(a.fecha)||b.id-a.id);
+}
+
+function renderHist() {
+  const data = getHistFiltered();
+  const tb = document.getElementById('histBody');
+  const em = document.getElementById('histEmpty');
+  if (!data.length) { tb.innerHTML=''; em.style.display='block'; return; }
+  em.style.display='none';
+
+  tb.innerHTML = data.map(v => {
+    const saldoH = v.pago==='sena'&&v.saldoUsd>0.01 ? `<span class="c-p mono">U$D ${fm(v.saldoUsd)}</span>` : v.pago==='pagado' ? '<span class="badge b-pago">PAGADO</span>' : '—';
+    const linkIcon = v.link ? `<a href="${v.link}" target="_blank" style="color:var(--purple);text-decoration:none" title="ManyChat">🔗</a>` : '';
+    const notionIcon = v.notion_id ? `<span style="color:var(--cyan);font-size:.7rem" title="Sincronizado con Notion (${v.notion_estado||''})">◉</span>` : '';
+    const needsBadge = v.needs_completion ? `<span style="font-size:.55rem;padding:1px 6px;background:var(--orange-dim);color:var(--orange);border-radius:6px;font-weight:700;letter-spacing:.5px;margin-left:4px">SIN COMPLETAR</span>` : '';
+    const pagoLabel = v.pago==='sena'?'Seña':v.pago==='completando'?'Comp.':v.pago==='pagado'?'Pagado':'Full';
+    const pagoBadge = v.pago==='pagado'?'b-pago':('b-'+v.pago);
+    const rowStyle = v.needs_completion ? 'background:rgba(255,152,0,.04);border-left:3px solid var(--orange)' : '';
+
+    return `<tr class="${editingId===v.id?'editing':''}" style="${rowStyle}">
+      <td>${ff(v.fecha)}</td>
+      <td>${v.cliente} ${linkIcon} ${notionIcon}${needsBadge}${v.fechaPago&&v.pago==='sena'?`<br><span class="pink-tag">Pago: ${ff(v.fechaPago)}</span>`:''}</td>
+      <td class="mono">${v.moneda==='USD'?'U$D ':'$ '}${fm(v.monto)}</td>
+      <td><span class="badge b-${v.moneda.toLowerCase()}">${v.moneda}</span></td>
+      <td class="mono c-u">${v.ticketUsd>0?'U$D '+fm(v.ticketUsd):'—'}</td>
+      <td class="mono" style="color:var(--text-dim)">${v.cotiz?'$ '+fm(v.cotiz):'—'}</td>
+      <td class="mono">$ ${fm(v.cobradoArs||0)}</td>
+      <td class="mono c-o">$ ${fm(v.netoArs||0)}</td>
+      <td>${saldoH}</td>
+      <td><span class="badge ${v.prod==='downsell'?'b-ds':'b-payfull'}">${v.prod==='downsell'?'DS':'INSC'}</span></td>
+      <td><span class="badge b-${v.cat}">${v.cat==='clase'?'Cl.':'Sg.'}</span></td>
+      <td><span class="badge ${pagoBadge}">${pagoLabel}</span></td>
+      <td class="mono c-a">$ ${fm(v.comision)}</td>
+      <td><div class="row-act">${v.needs_completion?`<button class="ba" style="background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange)" onclick="completarDesdeNotion(${v.id})" title="Abrir Notion del registro y completar">⚡</button>`:''}<button class="ba be" onclick="editVenta(${v.id})">✎</button><button class="ba bd" onclick="eliminar(${v.id})">✕</button></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// === TRANSCRIPCIONES (Tab 3) ===
+function renderTrans() {
+  const search = (document.getElementById('transSearch').value||'').toLowerCase();
+  const d1 = document.getElementById('tDesde').value;
+  const d2 = document.getElementById('tHasta').value;
+
+  let data = ventas.filter(v => v.transcripcion && v.transcripcion.trim());
+  if (search) data = data.filter(v => v.cliente.toLowerCase().includes(search));
+  if (d1) data = data.filter(v => v.fecha >= d1);
+  if (d2) data = data.filter(v => v.fecha <= d2);
+  data.sort((a,b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
+
+  const container = document.getElementById('transList');
+  const empty = document.getElementById('transEmpty');
+  if (!data.length) { container.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  container.innerHTML = data.map(v => `
+    <div class="trans-card">
+      <div class="tc-header">
+        <div>
+          <span class="tc-name">${v.cliente}</span>
+          ${v.link?`<a href="${v.link}" target="_blank" style="color:var(--purple);text-decoration:none;margin-left:8px">🔗</a>`:''}
+        </div>
+        <span class="tc-date">${ff(v.fecha)} · ${v.pago==='sena'?'Seña':v.pago==='completando'?'Comp.':'Pay Full'} · $ ${fm(v.comision)} com.</span>
+      </div>
+      <div class="tc-text" id="tc${v.id}">${escHtml(v.transcripcion)}</div>
+      <span class="tc-toggle" onclick="toggleTrans(${v.id})">Ver más / menos</span>
+    </div>
+  `).join('');
+}
+
+function toggleTrans(id) {
+  document.getElementById('tc'+id).classList.toggle('expanded');
+}
+
+function exportTrans() {
+  const search = (document.getElementById('transSearch').value||'').toLowerCase();
+  const d1 = document.getElementById('tDesde').value;
+  const d2 = document.getElementById('tHasta').value;
+  let data = ventas.filter(v => v.transcripcion && v.transcripcion.trim());
+  if (search) data = data.filter(v => v.cliente.toLowerCase().includes(search));
+  if (d1) data = data.filter(v => v.fecha >= d1);
+  if (d2) data = data.filter(v => v.fecha <= d2);
+
+  if (!data.length) return alert('No hay transcripciones para exportar');
+
+  let txt = '';
+  data.forEach(v => {
+    txt += `=== ${v.cliente} · ${ff(v.fecha)} · ${v.pago} ===\n${v.transcripcion}\n\n`;
+  });
+
+  const blob = new Blob([txt], { type:'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `transcripciones_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// === EXPORT CSV ===
+function exportCSV() {
+  const data = getHistFiltered();
+  if (!data.length) return alert('No hay ventas');
+  let csv = 'Fecha,Cliente,Monto,Moneda,Cotiz,Producto,Ticket USD,Cobrado ARS,Neto ARS,Cat,%,Pago,Comision,Fecha Pago,Saldo USD,Link\n';
+  data.forEach(v => {
+    csv += `${ff(v.fecha)},"${v.cliente}",${v.monto},${v.moneda},${v.cotiz||''},${v.prod||''},${v.ticketUsd||''},${(v.cobradoArs||0).toFixed(2)},${(v.netoArs||0).toFixed(2)},${v.cat},${((v.pct||0)*100).toFixed(0)}%,${v.pago},${(v.comision||0).toFixed(2)},${v.fechaPago||''},${v.saldoUsd?v.saldoUsd.toFixed(2):''},"${v.link||''}"\n`;
+  });
+  const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`comisiones_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// === HELPERS ===
+function fm(n) { return (n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function ff(f) { if(!f) return '—'; const [y,m,d]=f.split('-'); return `${d}/${m}/${y}`; }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// =====================================================================
+// FILTRO POR MES + VISTA HISTÓRICO MENSUAL
+// =====================================================================
+
+// Estado del mes seleccionado en el dashboard
+let currentMonth = new Date().toISOString().slice(0, 7); // 'YYYY-MM'
+let showAllMonths = false;
+
+const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function getMonthKey(fecha) {
+  if (!fecha) return null;
+  return fecha.slice(0, 7); // 'YYYY-MM'
+}
+
+function getVentasByMonth(monthKey) {
+  return ventas.filter(v => getMonthKey(v.fecha) === monthKey);
+}
+
+function formatMonthLabel(monthKey) {
+  if (!monthKey) return '—';
+  const [y, m] = monthKey.split('-');
+  return `${MONTH_NAMES[parseInt(m)-1]} ${y}`;
+}
+
+function updateMonthLabel() {
+  const label = document.getElementById('currentMonthLabel');
+  const subtitle = document.getElementById('currentMonthSubtitle');
+  if (showAllMonths) {
+    label.textContent = 'TODOS LOS MESES';
+    subtitle.textContent = `${ventas.length} ventas totales`;
+  } else {
+    label.textContent = formatMonthLabel(currentMonth);
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const count = getVentasByMonth(currentMonth).length;
+    subtitle.textContent = currentMonth === thisMonth 
+      ? `Mes actual · ${count} ventas` 
+      : `${count} ventas en este mes`;
+  }
+}
+
+function changeMonth(direction) {
+  if (showAllMonths) {
+    showAllMonths = false;
+    document.getElementById('showAllToggle').checked = false;
+  }
+  const [y, m] = currentMonth.split('-').map(Number);
+  const d = new Date(y, m - 1 + direction, 1);
+  currentMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  updateMonthLabel();
+  renderDash();
+}
+
+function resetToCurrentMonth() {
+  currentMonth = new Date().toISOString().slice(0, 7);
+  showAllMonths = false;
+  document.getElementById('showAllToggle').checked = false;
+  updateMonthLabel();
+  renderDash();
+}
+
+function toggleShowAll() {
+  showAllMonths = document.getElementById('showAllToggle').checked;
+  updateMonthLabel();
+  renderDash();
+}
+
+// === RENDER TAB HISTÓRICO MENSUAL ===
+function renderMonthly() {
+  const container = document.getElementById('monthlyList');
+  const empty = document.getElementById('monthlyEmpty');
+  
+  if (!ventas.length) {
+    container.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  
+  // Agrupar por mes
+  const byMonth = {};
+  ventas.forEach(v => {
+    const key = getMonthKey(v.fecha);
+    if (!key) return;
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(v);
+  });
+  
+  const sortedMonths = Object.keys(byMonth).sort().reverse();
+  const currentYear = new Date().getFullYear().toString();
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  
+  // Stats del año actual
+  const ventasThisYear = ventas.filter(v => v.fecha && v.fecha.startsWith(currentYear));
+  const comAnual = ventasThisYear.reduce((s,v) => s+(v.comision||0), 0);
+  
+  // Mejor mes
+  let mejorMes = null, mejorMonto = 0;
+  sortedMonths.forEach(mk => {
+    const com = byMonth[mk].reduce((s,v) => s+(v.comision||0), 0);
+    if (com > mejorMonto) { mejorMonto = com; mejorMes = mk; }
+  });
+  
+  // Promedio mensual del año actual
+  const mesesEsteAno = sortedMonths.filter(mk => mk.startsWith(currentYear));
+  const promedio = mesesEsteAno.length ? comAnual / mesesEsteAno.length : 0;
+  
+  document.getElementById('hmMesesCount').textContent = sortedMonths.length;
+  document.getElementById('hmComAnual').textContent = '$ ' + fm(comAnual);
+  document.getElementById('hmMejorMes').textContent = mejorMes ? formatMonthLabel(mejorMes) : '—';
+  document.getElementById('hmMejorMonto').textContent = mejorMes ? '$ ' + fm(mejorMonto) : '';
+  document.getElementById('hmPromedio').textContent = '$ ' + fm(promedio);
+  
+  container.innerHTML = sortedMonths.map(mk => {
+    const vs = byMonth[mk];
+    const isCurrent = mk === thisMonth;
+    const com = vs.reduce((s,v) => s+(v.comision||0), 0);
+    const fact = vs.reduce((s,v) => s+(v.cobradoArs||0), 0);
+    const cClase = vs.filter(v=>v.cat==='clase').reduce((s,v)=>s+(v.comision||0),0);
+    const cSeg = vs.filter(v=>v.cat==='seguimiento').reduce((s,v)=>s+(v.comision||0),0);
+    const tUsd = vs.filter(v=>!v.parentId).reduce((s,v)=>s+(v.ticketUsd||0),0);
+    const senas = vs.filter(v => v.pago === 'sena').length;
+    const fulls = vs.filter(v => v.pago === 'payfull').length;
+    const comps = vs.filter(v => v.pago === 'completando').length;
+    
+    return `<div class="month-card" style="background:var(--surface);border:1px solid ${isCurrent?'var(--accent)':'var(--border)'};border-radius:var(--rl);margin-bottom:14px;overflow:hidden">
+      <div class="month-header" onclick="toggleMonth('${mk}')" style="padding:18px 22px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;background:${isCurrent?'var(--accent-dim)':'transparent'}">
+        <div style="display:flex;align-items:center;gap:14px">
+          <span style="font-size:1rem" id="monthArrow_${mk}">▶</span>
+          <div>
+            <div style="font-size:1rem;font-weight:700;color:${isCurrent?'var(--accent)':'var(--text)'}">${formatMonthLabel(mk)} ${isCurrent?'<span style="font-size:.6rem;padding:2px 8px;background:var(--accent);color:var(--bg);border-radius:10px;margin-left:8px;letter-spacing:1px">ACTUAL</span>':''}</div>
+            <div style="font-size:.72rem;color:var(--text-muted);margin-top:3px">${vs.length} ventas · ${senas} señas · ${fulls} full · ${comps} comp.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;align-items:center">
+          <div style="text-align:right">
+            <div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px">Comisión</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--accent)">$ ${fm(com)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px">Facturación</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.95rem;font-weight:600;color:var(--gold)">$ ${fm(fact)}</div>
+          </div>
+        </div>
+      </div>
+      <div class="month-detail" id="monthDetail_${mk}" style="display:none;padding:0 22px 18px 22px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+          <div style="background:var(--surface-2);padding:10px 12px;border-radius:8px"><div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Comisión Clase</div><div style="font-family:'JetBrains Mono',monospace;font-size:.92rem;font-weight:600;color:var(--gold)">$ ${fm(cClase)}</div></div>
+          <div style="background:var(--surface-2);padding:10px 12px;border-radius:8px"><div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Comisión Seg.</div><div style="font-family:'JetBrains Mono',monospace;font-size:.92rem;font-weight:600;color:var(--cyan)">$ ${fm(cSeg)}</div></div>
+          <div style="background:var(--surface-2);padding:10px 12px;border-radius:8px"><div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Tickets USD</div><div style="font-family:'JetBrains Mono',monospace;font-size:.92rem;font-weight:600;color:var(--usd)">U$D ${fm(tUsd)}</div></div>
+          <div style="background:var(--surface-2);padding:10px 12px;border-radius:8px"><div style="font-size:.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px">Promedio venta</div><div style="font-family:'JetBrains Mono',monospace;font-size:.92rem;font-weight:600;color:var(--text)">$ ${fm(vs.length?fact/vs.length:0)}</div></div>
+        </div>
+        <div class="tscroll">
+          <table>
+            <thead><tr><th>Fecha</th><th>Cliente</th><th>Cobrado</th><th>Cat.</th><th>Pago</th><th>Comisión</th><th></th></tr></thead>
+            <tbody>${vs.sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(v=>`<tr>
+              <td>${ff(v.fecha)}</td>
+              <td>${v.cliente}${v.notion_id?` <span style="color:var(--cyan);font-size:.65rem" title="Sincronizado con Notion">◉</span>`:''}</td>
+              <td class="mono">${v.moneda==='USD'?'U$D ':'$ '}${fm(v.monto)}</td>
+              <td><span class="badge b-${v.cat}">${v.cat==='clase'?'Cl.':'Sg.'}</span></td>
+              <td><span class="badge b-${v.pago}">${v.pago==='sena'?'Seña':v.pago==='completando'?'Comp.':v.pago==='pagado'?'Pago':'Full'}</span></td>
+              <td class="mono c-a">$ ${fm(v.comision)}</td>
+              <td><div class="row-act"><button class="ba be" onclick="editVenta(${v.id})">✎</button><button class="ba bd" onclick="eliminar(${v.id})">✕</button></div></td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;display:flex;justify-content:flex-end">
+          <button class="btn-sm btn-csv" onclick="exportMonthCSV('${mk}')">⬇ Exportar CSV de ${formatMonthLabel(mk)}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMonth(mk) {
+  const detail = document.getElementById('monthDetail_'+mk);
+  const arrow = document.getElementById('monthArrow_'+mk);
+  if (detail.style.display === 'none') {
+    detail.style.display = 'block';
+    arrow.textContent = '▼';
+  } else {
+    detail.style.display = 'none';
+    arrow.textContent = '▶';
+  }
+}
+
+function exportMonthCSV(mk) {
+  const data = getVentasByMonth(mk).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  if (!data.length) return alert('No hay ventas en este mes');
+  let csv = 'Fecha,Cliente,Monto,Moneda,Cotiz,Producto,Ticket USD,Cobrado ARS,Neto ARS,Cat,%,Pago,Comision,Fecha Pago,Saldo USD,Link,Notion_ID\n';
+  data.forEach(v => {
+    csv += `${ff(v.fecha)},"${v.cliente}",${v.monto},${v.moneda},${v.cotiz||''},${v.prod||''},${v.ticketUsd||''},${(v.cobradoArs||0).toFixed(2)},${(v.netoArs||0).toFixed(2)},${v.cat},${((v.pct||0)*100).toFixed(0)}%,${v.pago},${(v.comision||0).toFixed(2)},${v.fechaPago||''},${v.saldoUsd?v.saldoUsd.toFixed(2):''},"${v.link||''}",${v.notion_id||''}\n`;
+  });
+  const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`comisiones_${mk}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// =====================================================================
+// TOAST NOTIFICACIONES
+// =====================================================================
+
+function showToast(msg, type = 'success', duration = 3000) {
+  const existing = document.getElementById('toastContainer');
+  if (existing) existing.remove();
+  
+  const container = document.createElement('div');
+  container.id = 'toastContainer';
+  container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;animation:slideIn .3s ease-out';
+  
+  const colors = {
+    success: { bg: 'var(--accent-dim)', border: 'var(--accent)', color: 'var(--accent)', icon: '✓' },
+    info: { bg: 'var(--cyan-dim)', border: 'var(--cyan)', color: 'var(--cyan)', icon: 'ℹ' },
+    warn: { bg: 'var(--orange-dim)', border: 'var(--orange)', color: 'var(--orange)', icon: '⚠' },
+    error: { bg: 'var(--red-dim)', border: 'var(--red)', color: 'var(--red)', icon: '✕' }
+  };
+  const c = colors[type] || colors.success;
+  
+  container.innerHTML = `<div style="background:${c.bg};border:1px solid ${c.border};color:${c.color};padding:14px 20px;border-radius:12px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:.85rem;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(0,0,0,.3);min-width:240px;max-width:380px">
+    <span style="font-size:1.1rem">${c.icon}</span>
+    <span>${msg}</span>
+  </div>`;
+  
+  // Inject animation keyframe if not exists
+  if (!document.getElementById('toastAnimStyle')) {
+    const style = document.createElement('style');
+    style.id = 'toastAnimStyle';
+    style.textContent = '@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}@keyframes slideOut{from{transform:translateX(0);opacity:1}to{transform:translateX(120%);opacity:0}}';
+    document.head.appendChild(style);
+  }
+  
+  document.body.appendChild(container);
+  
+  setTimeout(() => {
+    container.style.animation = 'slideOut .3s ease-in';
+    setTimeout(() => container.remove(), 300);
+  }, duration);
+}
+
+// =====================================================================
+// NAVEGACIÓN RÁPIDA
+// =====================================================================
+
+function verMesEnHistorico() {
+  switchTab(3);
+  // Esperar a que renderice y desplegar el mes actual (o el seleccionado en el dashboard)
+  setTimeout(() => {
+    const target = showAllMonths ? new Date().toISOString().slice(0,7) : currentMonth;
+    const detail = document.getElementById('monthDetail_' + target);
+    const arrow = document.getElementById('monthArrow_' + target);
+    if (detail && detail.style.display === 'none') {
+      detail.style.display = 'block';
+      if (arrow) arrow.textContent = '▼';
+    }
+    // Scroll al mes
+    const card = document.querySelector(`[onclick="toggleMonth('${target}')"]`);
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function completarDesdeNotion(id) {
+  const v = ventas.find(x => x.id === id);
+  if (!v) return;
+  // Abrir Notion del registro en pestaña nueva (si tiene notion_id)
+  if (v.notion_id) {
+    const notionUrl = `https://notion.so/${v.notion_id.replace(/-/g,'')}`;
+    window.open(notionUrl, '_blank');
+    showToast('Abriendo Notion del registro para que veas el comprobante', 'info', 2500);
+  }
+  // Y abrir el form de edición en el tracker
+  setTimeout(() => editVenta(id), 200);
+}
+
+const NOTION_DEFAULT_DB = '30e015e2-52d3-8030-ad63-000bca99c133';
+const NOTION_VERSION = '2022-06-28';
+// Proxy CORS público para llamadas directas desde browser a api.notion.com
+// (Notion no permite CORS desde browsers directamente)
+const CORS_PROXY = 'https://corsproxy.io/?url=';
+
+function getNotionConfig() {
+  return {
+    apiKey: localStorage.getItem('notion_api_key') || '',
+    dbId: localStorage.getItem('notion_db_id') || NOTION_DEFAULT_DB
+  };
+}
+
+function isNotionConnected() {
+  return !!localStorage.getItem('notion_api_key');
+}
+
+function updateNotionUI() {
+  const badge = document.getElementById('notionStatusBadge');
+  const syncBtn = document.getElementById('syncBtn');
+  if (isNotionConnected()) {
+    badge.style.display = 'inline-block';
+    syncBtn.style.display = 'inline-flex';
+  } else {
+    badge.style.display = 'none';
+    syncBtn.style.display = 'none';
+  }
+}
+
+function openNotionConfig() {
+  const cfg = getNotionConfig();
+  document.getElementById('notionApiKey').value = cfg.apiKey;
+  document.getElementById('notionDbId').value = cfg.dbId;
+  document.getElementById('notionTestResult').style.display = 'none';
+  // Setear el toggle según localStorage
+  const toggle = document.getElementById('syncAllToggle');
+  if (toggle) {
+    toggle.checked = localStorage.getItem('notion_sync_from_all') === 'true';
+    updateSyncRangeHint();
+  }
+  document.getElementById('notionModal').style.display = 'flex';
+}
+
+function toggleSyncAll() {
+  const checked = document.getElementById('syncAllToggle').checked;
+  localStorage.setItem('notion_sync_from_all', checked ? 'true' : 'false');
+  updateSyncRangeHint();
+}
+
+function updateSyncRangeHint() {
+  const hint = document.getElementById('syncRangeHint');
+  if (!hint) return;
+  const all = localStorage.getItem('notion_sync_from_all') === 'true';
+  const now = new Date();
+  const mesActual = MONTH_NAMES[now.getMonth()] + ' ' + now.getFullYear();
+  if (all) {
+    hint.innerHTML = `Se baja <strong style="color:var(--orange)">todo el histórico</strong> (puede traer muchas ventas viejas sin completar).`;
+  } else {
+    hint.innerHTML = `Solo se bajan ventas desde <strong style="color:var(--accent)">${mesActual}</strong> en adelante.`;
+  }
+}
+
+function closeNotionConfig() {
+  document.getElementById('notionModal').style.display = 'none';
+}
+
+async function saveNotionConfig() {
+  const apiKey = document.getElementById('notionApiKey').value.trim();
+  const dbId = document.getElementById('notionDbId').value.trim() || NOTION_DEFAULT_DB;
+  const result = document.getElementById('notionTestResult');
+  
+  if (!apiKey) {
+    result.style.display = 'block';
+    result.style.color = 'var(--red)';
+    result.textContent = '✕ Falta el API key';
+    return;
+  }
+  
+  result.style.display = 'block';
+  result.style.color = 'var(--text-dim)';
+  result.textContent = '⏳ Probando conexión...';
+  
+  // Guardar temporalmente para hacer el test
+  localStorage.setItem('notion_api_key', apiKey);
+  localStorage.setItem('notion_db_id', dbId);
+  
+  try {
+    const test = await notionApiCall(`databases/${dbId}`, 'GET');
+    if (test.ok) {
+      result.style.color = 'var(--accent)';
+      result.innerHTML = `✓ Conexión exitosa. Base: <strong>${test.data.title?.[0]?.plain_text || 'sin nombre'}</strong>`;
+      updateNotionUI();
+      setTimeout(() => {
+        closeNotionConfig();
+      }, 1500);
+    } else {
+      throw new Error(test.error || 'Falló');
+    }
+  } catch (err) {
+    result.style.color = 'var(--red)';
+    result.innerHTML = `✕ Error: ${err.message}<br><span style="color:var(--text-muted);font-size:.7rem">Verificá que (1) el API key sea correcto, (2) la base esté compartida con tu integración, (3) el database ID sea válido.</span>`;
+    // No remover el config para que pueda corregirlo
+  }
+}
+
+function disconnectNotion() {
+  if (!confirm('¿Desconectar Notion? Las ventas sincronizadas se mantienen en el tracker.')) return;
+  localStorage.removeItem('notion_api_key');
+  localStorage.removeItem('notion_db_id');
+  updateNotionUI();
+  closeNotionConfig();
+}
+
+async function notionApiCall(path, method = 'GET', body = null) {
+  const { apiKey } = getNotionConfig();
+  if (!apiKey) return { ok: false, error: 'No conectado a Notion' };
+  
+  const url = CORS_PROXY + encodeURIComponent(`https://api.notion.com/v1/${path}`);
+  
+  try {
+    const opts = {
+      method,
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Notion-Version': NOTION_VERSION,
+        'Content-Type': 'application/json'
+      }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    
+    const res = await fetch(url, opts);
+    const data = await res.json();
+    
+    if (!res.ok) {
+      return { ok: false, error: data.message || `HTTP ${res.status}` };
+    }
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+// Helpers para extraer values de Notion properties
+function nGetTitle(prop) { return prop?.title?.[0]?.plain_text || ''; }
+function nGetRichText(prop) { return prop?.rich_text?.map(t => t.plain_text).join('') || ''; }
+function nGetSelect(prop) { return prop?.select?.name || ''; }
+function nGetDate(prop) { return prop?.date?.start || null; }
+function nGetCheckbox(prop) { return !!prop?.checkbox; }
+function nGetUrl(prop) { return prop?.url || ''; }
+function nGetNumber(prop) { return (typeof prop?.number === 'number') ? prop.number : null; }
+
+// Encuentra el campo TITLE automáticamente (es el campo principal de Notion, sin importar el nombre)
+function findTitleField(props) {
+  for (const key in props) {
+    if (props[key]?.type === 'title') {
+      const title = props[key].title?.[0]?.plain_text || '';
+      return title;
+    }
+  }
+  return '';
+}
+
+// Mapeo Estado de Notion → pago del tracker
+// Estados conocidos: "Pago", "FALTA DATOS", "ACCESOS✅ POR CARGAR ❌", "CARGADA ⬆️",
+// "SEÑA CARGADA ⬆️", "COMPLETA PAGO ⬆️", "SANTI ✅"
+// Mapeo TIPO DE PAGO de Notion → pago del tracker (fallback cuando TIPO no matchea)
+function mapTipoPago(tipoPago) {
+  if (!tipoPago) return null;
+  const t = tipoPago.toUpperCase().trim();
+  if (t === 'SEÑA' || t === 'SENA') return 'sena';
+  if (t === 'PAYFULL') return 'payfull';
+  if (t === 'COMPLETA PAGO') return 'payfull';
+  if (t === 'DOWNSELL') return 'payfull';
+  return null;
+}
+
+function mapNotionEstado(estado) {
+  if (!estado) return null;
+  // Normalizar: quitar emojis y espacios extra para matchear mejor
+  const e = estado.toUpperCase().trim();
+  // Orden importa: chequear los más específicos primero
+  if (e.includes('SEÑA CARGADA') || e.includes('SENA CARGADA')) return 'sena';
+  if (e.includes('COMPLETA PAGO')) return 'payfull';
+  if (e.includes('CARGADA')) return 'payfull'; // genérico: ya cargó algo
+  if (e.includes('SANTI')) return 'payfull';
+  if (e === 'PAGO' || e.startsWith('PAGO ')) return 'payfull';
+  if (e.includes('ACCESOS') || e.includes('POR CARGAR')) return 'payfull';
+  // Estados que NO traer al tracker: FALTA DATOS
+  if (e.includes('FALTA DATOS')) return null;
+  return null;
+}
+
+// Mapeo ADQUISICION de Notion → cat del tracker
+// Si no tiene valor, default a 'seguimiento' (lo más común)
+function mapNotionTipo(tipo) {
+  const t = (tipo || '').toUpperCase();
+  if (t === 'CLASE') return 'clase';
+  return 'seguimiento';  // default: seguimiento (incluye vacío, SEGUIMIENTO, o cualquier otro)
+}
+
+// Mapeo Funnel de Notion → producto del tracker
+function mapNotionProd(funnel) {
+  const f = (funnel || '').toUpperCase();
+  if (f.includes('DOWNSELL') || f.includes('FUNNEL ES HOY')) return 'downsell';
+  return 'inscripcion';
+}
+
+async function syncFromNotion(silent = false) {
+  if (!isNotionConnected()) {
+    if (!silent) {
+      alert('Primero conectá tu cuenta de Notion (botón ⚙️ Notion arriba)');
+      openNotionConfig();
+    }
+    return { ok: false };
+  }
+  
+  const syncIcon = document.getElementById('syncIcon');
+  const syncLabel = document.getElementById('syncLabel');
+  const syncBtn = document.getElementById('syncBtn');
+  
+  if (!silent) {
+    syncBtn.disabled = true;
+    syncIcon.textContent = '⏳';
+    syncLabel.textContent = 'Sincronizando...';
+  }
+  
+  const { dbId } = getNotionConfig();
+  
+  // Filtro: solo bajar ventas desde el inicio del mes actual
+  // El usuario puede override esto si quiere bajar todo (ver localStorage 'notion_sync_from_all')
+  const syncFromAll = localStorage.getItem('notion_sync_from_all') === 'true';
+  const now = new Date();
+  const inicioMes = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  
+  let allPages = [];
+  let hasMore = true;
+  let cursor = undefined;
+  
+  try {
+    // Paginación: bajar todas las páginas
+    while (hasMore) {
+      const body = { page_size: 100 };
+      if (cursor) body.start_cursor = cursor;
+      
+      // Filtrar por Fecha >= inicio del mes actual (a menos que esté activado "bajar todo")
+      if (!syncFromAll) {
+        body.filter = {
+          property: 'Fecha',
+          date: { on_or_after: inicioMes }
+        };
+      }
+      
+      const res = await notionApiCall(`databases/${dbId}/query`, 'POST', body);
+      
+      if (!res.ok) {
+        throw new Error(res.error);
+      }
+      
+      allPages = allPages.concat(res.data.results);
+      hasMore = res.data.has_more;
+      cursor = res.data.next_cursor;
+    }
+    
+    // Procesar páginas
+    let nuevas = 0, actualizadas = 0, ignoradas = 0;
+    const motivosIgnoradas = { sinFecha: 0, sinTipo: 0, sinEstadoValido: 0 };
+    
+    allPages.forEach(page => {
+      const props = page.properties;
+      let nombre = findTitleField(props); // detecta automáticamente el campo title
+      const datos = nGetRichText(props['datos']);
+      // Fallback: si no tiene nombre, usar la primera parte de "datos" (ej. "Juan Perez, 1155..." → "Juan Perez")
+      if (!nombre && datos) {
+        // Tomar hasta el primer separador (coma, espacio doble, número, salto de línea)
+        const match = datos.match(/^([^,\n\d]+?)(?:[,\n]|\s\d|$)/);
+        nombre = match ? match[1].trim() : datos.slice(0, 40).trim();
+      }
+      // Último fallback: usar id de Notion como identificador
+      if (!nombre) {
+        nombre = `Cliente ${page.id.slice(-4)}`;
+      }
+      let fecha = nGetDate(props['Fecha']);
+      // Normalizar fecha: si viene con hora ("2026-05-19T16:02:00..."), quedarse solo con YYYY-MM-DD
+      if (fecha && fecha.length > 10) fecha = fecha.slice(0, 10);
+      // Fallback: usar fecha de creación de la página de Notion si no hay Fecha cargada
+      if (!fecha && page.created_time) fecha = page.created_time.slice(0, 10);
+      const tipo = nGetSelect(props['ADQUISICION']);  // CLASE o SEGUIMIENTO
+      const estado = nGetSelect(props['TIPO']);        // Pago, CARGADA, ACCESOS, etc.
+      let fechaPago = nGetDate(props['DIA A COMPLETAR PAGO']);
+      if (fechaPago && fechaPago.length > 10) fechaPago = fechaPago.slice(0, 10);
+      const link = nGetUrl(props['URL MANY']);
+      const completoPago = nGetCheckbox(props['COMPLETO PAGÓ']);
+      const funnel = nGetSelect(props['Funnel']);
+      const tipoPago = nGetSelect(props['TIPO DE PAGO']);  // SEÑA, PAYFULL, COMPLETA PAGO, DOWNSELL
+      
+      const cat = mapNotionTipo(tipo);
+      const pago = mapNotionEstado(estado) || mapTipoPago(tipoPago) || 'payfull';  // default: payfull si no tiene tipo
+      const prod = mapNotionProd(funnel);
+      const montoCobradoNotion = nGetNumber(props['Monto cobrado']); // TAREA 2: leer monto cobrado
+      
+      // Skip SOLO si no tiene fecha (sin fecha no se puede ubicar en ningún mes)
+      if (!fecha) { ignoradas++; motivosIgnoradas.sinFecha++; return; }
+      
+      // Buscar si ya existe en el tracker (por notion_id)
+      const existing = ventas.find(v => v.notion_id === page.id);
+      
+      if (existing) {
+        // Actualizar SOLO campos read-only de Notion (no tocar montos/comisiones que David completó)
+        existing.cliente = nombre;
+        existing.fecha = fecha;
+        existing.cat = cat;
+        existing.notion_pago = pago;
+        existing.notion_estado = estado;
+        existing.notion_funnel = funnel;
+        existing.fechaPago = fechaPago || existing.fechaPago;
+        existing.link = link || existing.link;
+        existing.notion_datos = datos;
+        existing.notion_completo_pago = completoPago;
+        existing.notion_last_sync = new Date().toISOString();
+        
+        // TAREA 2: pre-llenar monto cobrado desde Notion SI el tracker aún no tiene uno mayor
+        if (montoCobradoNotion > 0 && !(existing.monto > montoCobradoNotion)) {
+          existing.monto = montoCobradoNotion;
+          existing.cobradoArs = montoCobradoNotion;
+          // Recalcular comisión base si hay pct definido
+          existing.netoArs = montoCobradoNotion * 0.93;
+          existing.comision = existing.netoArs * (existing.pct || 0);
+        }
+        
+        // TAREA 3: sincronizar notas desde Notion → campo transcripcion del tracker
+        if (datos) {
+          if (!existing.transcripcion) {
+            existing.transcripcion = datos;
+          } else if (!existing.transcripcion.includes(datos)) {
+            // Concatenar sin duplicar
+            existing.transcripcion = datos + '\n---\n' + existing.transcripcion;
+          }
+        }
+        
+        actualizadas++;
+      } else {
+        // Crear nueva venta en estado "pendiente de completar comisiones"
+        const reg = {
+          id: Date.now() + Math.floor(Math.random() * 10000), // id único
+          notion_id: page.id,
+          notion_estado: estado,
+          notion_pago: pago,
+          notion_funnel: funnel,
+          notion_datos: datos,
+          notion_completo_pago: completoPago,
+          notion_last_sync: new Date().toISOString(),
+          cliente: nombre,
+          fecha: fecha,
+          fechaPago: fechaPago,
+          link: link,
+          cat: cat,
+          pago: pago,
+          // Campos para completar manualmente en el tracker
+          moneda: 'ARS',
+          monto: montoCobradoNotion > 0 ? montoCobradoNotion : 0,  // TAREA 2: pre-llenar si viene de Notion
+          cotiz: null,
+          prod: prod,
+          ticketUsd: 0,
+          ticketArs: 0,
+          cobradoUsd: 0,
+          cobradoArs: montoCobradoNotion > 0 ? montoCobradoNotion : 0,  // TAREA 2
+          netoArs: montoCobradoNotion > 0 ? montoCobradoNotion * 0.93 : 0,
+          pct: cat === 'seguimiento' ? 0.18 : 0.02,
+          comision: montoCobradoNotion > 0 ? (montoCobradoNotion * 0.93) * (cat === 'seguimiento' ? 0.18 : 0.02) : 0,
+          comClase: 0,
+          comSeg: 0,
+          saldoUsd: 0,
+          saldoArs: 0,
+          transcripcion: datos || '',  // TAREA 3: llenar notas desde campo "datos" de Notion
+          parentId: null,
+          pagos: [],
+          needs_completion: true // flag para destacar en UI
+        };
+        ventas.push(reg);
+        nuevas++;
+      }
+    });
+    
+    save();
+    renderAll();
+    if (document.querySelector('.tab.active')?.textContent.includes('Histórico')) renderMonthly();
+    
+    // TAREA 4: procesar FUPs automáticos para señas con fecha de completar pago
+    autoSetFupForSenas(allPages);
+    
+    // Guardar timestamp de última sync exitosa
+    localStorage.setItem('notion_last_sync', new Date().toISOString());
+    
+    if (!silent) {
+      syncIcon.textContent = '✓';
+      syncLabel.textContent = 'Sincronizado';
+    }
+    
+    // Log debug en consola siempre (para que David pueda revisar)
+    console.log('=== SYNC NOTION RESULTADO ===');
+    console.log(`Rango: ${syncFromAll ? 'TODO el histórico' : 'desde ' + inicioMes}`);
+    console.log(`Total páginas de Notion: ${allPages.length}`);
+    console.log(`✓ Nuevas: ${nuevas}`);
+    console.log(`↻ Actualizadas: ${actualizadas}`);
+    console.log(`✕ Ignoradas: ${ignoradas}`, motivosIgnoradas);
+    
+    // Mostrar toast solo si hubo cambios o si fue manual
+    if (nuevas > 0) {
+      showToast(`${nuevas} ${nuevas===1?'venta nueva':'ventas nuevas'} desde Notion${actualizadas?` · ${actualizadas} actualizadas`:''}`, 'success', 3500);
+    } else if (actualizadas > 0 && !silent) {
+      showToast(`${actualizadas} ${actualizadas===1?'venta actualizada':'ventas actualizadas'}${ignoradas?` · ${ignoradas} ignoradas`:''}`, 'info', 3000);
+    } else if (!silent) {
+      // Si todo está ignorado, dar más info al usuario
+      if (ignoradas > 0 && nuevas === 0 && actualizadas === 0) {
+        const detalles = [];
+        if (motivosIgnoradas.sinFecha) detalles.push(`${motivosIgnoradas.sinFecha} sin fecha`);
+        if (motivosIgnoradas.sinTipo) detalles.push(`${motivosIgnoradas.sinTipo} sin TIPO válido`);
+        if (motivosIgnoradas.sinEstadoValido) detalles.push(`${motivosIgnoradas.sinEstadoValido} con Estado no procesable`);
+        showToast(`${ignoradas} ignoradas (${detalles.join(', ')}). Ver consola F12 para detalles.`, 'warn', 6000);
+      } else {
+        showToast('Todo al día - no hay novedades', 'info', 2000);
+      }
+    }
+    
+    if (!silent) {
+      setTimeout(() => {
+        syncIcon.textContent = '🔄';
+        syncLabel.textContent = 'Sincronizar';
+        syncBtn.disabled = false;
+      }, 2000);
+    }
+    
+    return { ok: true, nuevas, actualizadas, ignoradas };
+    
+  } catch (err) {
+    if (!silent) {
+      syncIcon.textContent = '✕';
+      syncLabel.textContent = 'Error';
+      showToast('Error al sincronizar: ' + err.message, 'error', 4000);
+      setTimeout(() => {
+        syncIcon.textContent = '🔄';
+        syncLabel.textContent = 'Sincronizar';
+        syncBtn.disabled = false;
+      }, 2000);
+    } else {
+      console.warn('Auto-sync failed (silent):', err.message);
+    }
+    return { ok: false, error: err.message };
+  }
+}
+
+// Auto-sync al cargar la página (sin bloquear render inicial)
+function autoSyncOnLoad() {
+  if (!isNotionConnected()) return;
+  // Esperar 800ms para que la UI termine de renderizar y se vea suave
+  setTimeout(async () => {
+    const last = localStorage.getItem('notion_last_sync');
+    // Si la última sync fue hace menos de 30 segundos, no spammear
+    if (last && (Date.now() - new Date(last).getTime()) < 30000) return;
+    await syncFromNotion(true);
+  }, 800);
+}
+
+// TAREA 4: FUP automático — para señas con DIA A COMPLETAR PAGO, setear FUP 7 días antes
+// Solo escribe en Notion si FUP todavía está vacío (no sobreescribe)
+async function autoSetFupForSenas(pages) {
+  if (!isNotionConnected()) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  
+  for (const page of pages) {
+    const props = page.properties;
+    const tipoPago = nGetSelect(props['TIPO DE PAGO']);
+    const estado = nGetSelect(props['TIPO']);
+    const esSena = (tipoPago === 'SEÑA') || (estado && (estado.toUpperCase().includes('SEÑA') || estado.toUpperCase().includes('SENA')));
+    if (!esSena) continue;
+    
+    let fechaCompletar = nGetDate(props['DIA A COMPLETAR PAGO']);
+    if (!fechaCompletar) continue;
+    if (fechaCompletar.length > 10) fechaCompletar = fechaCompletar.slice(0, 10);
+    
+    // Si ya tiene FUP seteado, no tocar
+    const fupActual = nGetDate(props['FUP(notion)']);
+    if (fupActual) continue;
+    
+    // Calcular FUP = 7 días antes de DIA A COMPLETAR PAGO
+    const dCompletar = new Date(fechaCompletar + 'T00:00:00');
+    const fupDate = new Date(dCompletar.getTime() - 7 * 86400000);
+    
+    // Solo escribir si el FUP cae en el futuro (no tiene sentido avisar sobre fechas pasadas)
+    if (fupDate < today) continue;
+    
+    const fupStr = fupDate.toISOString().slice(0, 10);
+    
+    try {
+      await notionApiCall(`pages/${page.id}`, 'PATCH', {
+        properties: {
+          'FUP(notion)': { date: { start: fupStr } }
+        }
+      });
+      console.log(`[FUP auto] ${findTitleField(props) || page.id} → FUP seteado: ${fupStr} (completa: ${fechaCompletar})`);
+    } catch (err) {
+      console.warn('[FUP auto] Error escribiendo FUP:', err.message);
+    }
+  }
+}
+
+// === POTENCIALES DESDE SUPABASE ===
+const SB_URL_T = 'https://ylggvfvcgmpwokbfgayo.supabase.co';
+const SB_KEY_T = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsZ2d2ZnZjZ21wd29rYmZnYXlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzEzOTYsImV4cCI6MjA5NTE0NzM5Nn0.scR1PQfl4WZYfK--gSeufzYk4rXzGR2X3-39UP2fZgE';
+const PT_STAGES = ['📊 Análisis','🎯 Pitch','💰 Precio','🔑 Seña','🔥 Potencial'];
+const PT_COLORS = ['--blue','--purple','--orange','--gold','--red'];
+
+async function sbGet(path) {
+  const res = await fetch(SB_URL_T + path, {
+    headers: {'apikey': SB_KEY_T, 'Authorization': 'Bearer ' + SB_KEY_T}
+  });
+  if(!res.ok) throw new Error('Supabase error ' + res.status);
+  return res.json();
+}
+
+function ptDateBadge(fecha) {
+  if(!fecha) return '<span style="font-size:.62rem;color:var(--text-muted)">Sin fecha</span>';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(fecha+'T00:00:00');
+  const diff = Math.round((d-today)/86400000);
+  let cls, label;
+  if(diff<0){cls='var(--red)';label='Vencido '+Math.abs(diff)+'d';}
+  else if(diff===0){cls='var(--red)';label='HOY';}
+  else if(diff<=2){cls='var(--gold)';label='En '+diff+'d';}
+  else{cls='var(--usd)';label=d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});}
+  return `<span style="font-size:.62rem;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.2);color:${cls};font-weight:700">${label}</span>`;
+}
+
+async function renderPotencialesTracker() {
+  const container = document.getElementById('ptStages');
+  try {
+    const leads = await sbGet('/rest/v1/leads?select=*&estado=eq.activo&order=fecha_proximo_contacto.asc') || [];
+    const today = new Date(); today.setHours(0,0,0,0);
+    let late=0,soon=0,ok=0;
+    leads.forEach(l => {
+      if(!l.fecha_proximo_contacto) return;
+      const d = new Date(l.fecha_proximo_contacto+'T00:00:00');
+      const diff = Math.round((d-today)/86400000);
+      if(diff<=0) late++; else if(diff<=2) soon++; else ok++;
+    });
+    document.getElementById('ptTotal').textContent = leads.length;
+    document.getElementById('ptLate').textContent = late;
+    document.getElementById('ptSoon').textContent = soon;
+    document.getElementById('ptOk').textContent = ok;
+    const badge = document.getElementById('potBadge');
+    badge.textContent = leads.length;
+    badge.style.display = leads.length > 0 ? 'inline-block' : 'none';
+    container.innerHTML = PT_STAGES.map((name,i) => {
+      const cards = leads.filter(l=>l.etapa===i);
+      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px;min-height:200px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:8px">
+          <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${PT_COLORS[i].replace('--','var(--')+')'}">${name}</span>
+          <span style="font-size:.6rem;padding:2px 7px;border-radius:8px;background:${PT_COLORS[i].replace('--','var(--')+'-dim)'};color:${PT_COLORS[i].replace('--','var(--')+')'};font-weight:700">${cards.length}</span>
+        </div>
+        ${cards.length===0?'<div style="font-size:.68rem;color:var(--text-muted);text-align:center;padding:16px;opacity:.4">Sin leads</div>':''}
+        ${cards.map(c=>`<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:10px;margin-bottom:7px">
+          <div style="font-size:.8rem;font-weight:700;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nombre||'Sin nombre'}</div>
+          ${ptDateBadge(c.fecha_proximo_contacto)}
+          ${c.fecha_completar_pago?`<span style="font-size:.6rem;color:var(--orange);margin-left:4px">📅 Completa: ${new Date(c.fecha_completar_pago+'T00:00:00').toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})}</span>`:''}
+          ${c.notas?`<div style="font-size:.68rem;color:var(--text-muted);margin-top:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${c.notas}</div>`:''}
+          <div style="display:flex;gap:5px;margin-top:7px">
+            ${c.url_manychat?`<a href="${c.url_manychat}" target="_blank" style="flex:1;padding:4px;background:var(--surface-3);border:1px solid var(--border);border-radius:6px;color:var(--purple);font-size:.62rem;font-weight:700;text-align:center;text-decoration:none">💬 Chat</a>`:''}
+            <a href="http://localhost:8765/agenda-lead.html" target="_blank" style="flex:1;padding:4px;background:var(--accent-dim);border:1px solid rgba(0,212,170,.2);border-radius:6px;color:var(--accent);font-size:.62rem;font-weight:700;text-align:center;text-decoration:none">✎ Editar</a>
+          </div>
+        </div>`).join('')}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--red);font-size:.82rem">Error cargando Supabase: ${e.message}</div>`;
+  }
+}
+
+async function loadPotBadge() {
+  try {
+    const leads = await sbGet('/rest/v1/leads?select=id&estado=eq.activo') || [];
+    const badge = document.getElementById('potBadge');
+    if(leads.length > 0) { badge.textContent = leads.length; badge.style.display = 'inline-block'; }
+  } catch(e) { /* silencioso */ }
+}
+
+// Init
+updVis();
+updateNotionUI();
+updateMonthLabel();
+renderAll();
+autoSyncOnLoad();
+setTimeout(loadPotBadge, 1200);
+</script>
+
+</body>
+</html>
