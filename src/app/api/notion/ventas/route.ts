@@ -33,33 +33,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Nombre requerido" }, { status: 400 });
     }
 
+    const tipoDePago = body.tipoDePago || "SEÑA";
+
     const url = String(body.url ?? "").trim();
-    if (url) {
-      const dup = await notionFetch<{
-        results: { id: string }[];
-      }>(`databases/${databaseId}/query`, {
-        method: "POST",
-        body: {
-          filter: {
-            property: "URL MANY",
-            url: { equals: url },
-          },
-          page_size: 1,
-        },
-      });
-      if (dup.results.length > 0) {
-        return NextResponse.json(
-          { error: "Ya existe una venta con esa URL de ManyChat" },
-          { status: 409 },
-        );
-      }
-    }
 
     const properties: Record<string, unknown> = {
       Nombre: { title: [{ text: { content: nombre } }] },
       ADQUISICION: { select: { name: body.tipo || "SEGUIMIENTO" } },
       "TIPO DE PAGO": {
-        select: { name: body.tipoDePago || "SEÑA" },
+        select: { name: tipoDePago },
       },
       // "TIPO" es la columna ESTADO en el Notion de VENTAS (no "Estado" ni "").
       TIPO: {
@@ -75,6 +57,14 @@ export async function POST(request: Request) {
     if (body.notas) {
       properties.datos = { rich_text: [{ text: { content: String(body.notas) } }] };
     }
+    // COTIZACION (number) y TICKET ARS (number) ya existen en Notion: solo se
+    // mandan si traen valor (campos opcionales del formulario).
+    if (body.cotizacionUsd !== undefined && body.cotizacionUsd !== null && body.cotizacionUsd !== "") {
+      properties.COTIZACION = { number: Number(body.cotizacionUsd) };
+    }
+    if (body.precioPrograma !== undefined && body.precioPrograma !== null && body.precioPrograma !== "") {
+      properties["TICKET ARS"] = { number: Number(body.precioPrograma) };
+    }
     // El archivo NO va como propiedad: se agrega como bloque en el cuerpo de la página.
     const archivo = body["Archivos y multimedia"] as
       | { files?: { external?: { url?: string }; name?: string }[] }
@@ -87,8 +77,18 @@ export async function POST(request: Request) {
       if (esPdf) {
         children.push({
           object: "block",
-          type: "pdf",
-          pdf: { type: "external", external: { url: archivoUrl } },
+          type: "paragraph",
+          paragraph: {
+            rich_text: [
+              {
+                type: "text",
+                text: {
+                  content: "📄 Ver comprobante PDF",
+                  link: { url: archivoUrl },
+                },
+              },
+            ],
+          },
         });
       } else {
         children.push({

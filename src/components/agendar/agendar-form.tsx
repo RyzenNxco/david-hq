@@ -60,6 +60,9 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
   // TIPO DE PAGO (modo venta) → propiedad "TIPO DE PAGO" en Notion.
   const [tipoDePago, setTipoDePago] = useState("SEÑA");
   const [estado, setEstado] = useState("ACCESOS ✅ POR CARGAR ❌");
+  // Cotización USD y precio del programa (ARS): opcionales, modo venta.
+  const [cotizacionUsd, setCotizacionUsd] = useState("");
+  const [precioPrograma, setPrecioPrograma] = useState("");
   const [etapa, setEtapa] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -160,6 +163,8 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
           tipo,
           tipoDePago,
           estado,
+          cotizacionUsd,
+          precioPrograma,
         };
         // Si hay archivo subido, se adjunta como propiedad de archivos en Notion.
         if (archivoUrl) {
@@ -340,6 +345,7 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
                 onChange={(e) => setEstado(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
               >
+                <option value="FALTAN DATOS">FALTAN DATOS</option>
                 <option value="ACCESOS ✅ POR CARGAR ❌">ACCESOS ✅ POR CARGAR ❌</option>
                 <option value="Pago">Pago</option>
                 <option value="SEÑA CARGADA ⬆️">SEÑA CARGADA ⬆️</option>
@@ -376,6 +382,37 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
                 ) : null}
               </div>
             ) : null}
+            {/* Cotización USD: opcional, no bloquea el guardado. */}
+            <div>
+              <label className="text-xs text-muted">Cotización USD</label>
+              <input
+                type="number"
+                value={cotizacionUsd}
+                onChange={(e) => setCotizacionUsd(e.target.value)}
+                placeholder="ej: 1430"
+                className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
+              />
+            </div>
+            {/* Precio del programa (ARS): opcional, con atajo al precio actual. */}
+            <div>
+              <label className="text-xs text-muted">Precio del programa (ARS)</label>
+              <div className="mt-1 flex gap-2">
+                <input
+                  type="number"
+                  value={precioPrograma}
+                  onChange={(e) => setPrecioPrograma(e.target.value)}
+                  placeholder="ej: 281710"
+                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPrecioPrograma("281710")}
+                  className="shrink-0 rounded-lg border border-border bg-surface-2 px-2.5 text-xs text-muted hover:border-accent/50 hover:text-foreground"
+                >
+                  Usar precio actual
+                </button>
+              </div>
+            </div>
           </>
         ) : (
           <div>
@@ -448,7 +485,7 @@ export function AgendarForm({ initialUrl = "", initialName = "", isPotencial = f
 
         <button
           type="button"
-          onClick={guardar}
+          onClick={() => guardar()}
           disabled={
             loading ||
             (mode === "potencial" && !fechaContacto) ||
