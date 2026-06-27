@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage({
@@ -10,8 +11,9 @@ export default function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error: urlError } = use(searchParams);
+  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,19 +23,32 @@ export default function LoginPage({
     setError("");
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      password,
     });
 
     if (error) {
-      setError(error.message);
-    } else {
-      setSent(true);
+      setError("Email o contraseña incorrectos.");
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    router.push("/");
+    router.refresh();
+  };
+
+  const inputStyle = {
+    width: "100%",
+    background: "#1a1a1d",
+    border: "1px solid #2a2a2e",
+    borderRadius: "8px",
+    padding: "11px 14px",
+    color: "#e4e4e7",
+    fontSize: "14px",
+    boxSizing: "border-box" as const,
+    outline: "none",
+    transition: "border-color 0.15s",
   };
 
   return (
@@ -87,7 +102,7 @@ export default function LoginPage({
             David HQ
           </h1>
           <p style={{ color: "#52525b", fontSize: "13px", margin: 0 }}>
-            Ingresá tu email para acceder
+            Ingresá para acceder
           </p>
         </div>
 
@@ -108,91 +123,67 @@ export default function LoginPage({
           </div>
         )}
 
-        {/* Estado enviado */}
-        {sent ? (
-          <div
-            style={{
-              background: "#00d4aa15",
-              border: "1px solid #00d4aa30",
-              borderRadius: "10px",
-              padding: "20px",
-              textAlign: "center",
-            }}
-          >
-            <div style={{ fontSize: "28px", marginBottom: "10px" }}>📬</div>
+        <form onSubmit={handleLogin}>
+          <div style={{ marginBottom: "10px" }}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tu@gmail.com"
+              autoComplete="email"
+              required
+              style={inputStyle}
+              onFocus={(e) => (e.target.style.borderColor = "#00d4aa60")}
+              onBlur={(e) => (e.target.style.borderColor = "#2a2a2e")}
+            />
+          </div>
+
+          <div style={{ marginBottom: "14px" }}>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Contraseña"
+              autoComplete="current-password"
+              required
+              style={inputStyle}
+              onFocus={(e) => (e.target.style.borderColor = "#00d4aa60")}
+              onBlur={(e) => (e.target.style.borderColor = "#2a2a2e")}
+            />
+          </div>
+
+          {error && (
             <p
               style={{
-                color: "#00d4aa",
-                fontSize: "14px",
-                fontWeight: 600,
-                margin: "0 0 6px",
+                color: "#f87171",
+                fontSize: "12px",
+                margin: "0 0 12px",
               }}
             >
-              Link enviado
+              {error}
             </p>
-            <p style={{ color: "#52525b", fontSize: "13px", margin: 0 }}>
-              Revisá {email}
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: "14px" }}>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@gmail.com"
-                required
-                style={{
-                  width: "100%",
-                  background: "#1a1a1d",
-                  border: "1px solid #2a2a2e",
-                  borderRadius: "8px",
-                  padding: "11px 14px",
-                  color: "#e4e4e7",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                  outline: "none",
-                  transition: "border-color 0.15s",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = "#00d4aa60")}
-                onBlur={(e) => (e.target.style.borderColor = "#2a2a2e")}
-              />
-            </div>
+          )}
 
-            {error && (
-              <p
-                style={{
-                  color: "#f87171",
-                  fontSize: "12px",
-                  margin: "0 0 12px",
-                }}
-              >
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: "100%",
-                background: loading ? "#00d4aa80" : "#00d4aa",
-                color: "#09090b",
-                border: "none",
-                borderRadius: "8px",
-                padding: "11px",
-                fontSize: "14px",
-                fontWeight: 700,
-                cursor: loading ? "not-allowed" : "pointer",
-                transition: "opacity 0.15s",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              {loading ? "Enviando..." : "Enviar link de acceso →"}
-            </button>
-          </form>
-        )}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              background: loading ? "#00d4aa80" : "#00d4aa",
+              color: "#09090b",
+              border: "none",
+              borderRadius: "8px",
+              padding: "11px",
+              fontSize: "14px",
+              fontWeight: 700,
+              cursor: loading ? "not-allowed" : "pointer",
+              transition: "opacity 0.15s",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {loading ? "Entrando..." : "Entrar →"}
+          </button>
+        </form>
       </div>
     </div>
   );

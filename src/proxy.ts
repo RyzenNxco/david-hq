@@ -29,24 +29,13 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const { pathname, searchParams } = request.nextUrl;
-
-  // El magic link puede aterrizar el ?code= en cualquier ruta (p.ej. la raíz,
-  // si el Site URL de Supabase apunta ahí). Lo mandamos siempre al callback
-  // para intercambiarlo por sesión.
-  const code = searchParams.get("code");
-  if (code && !pathname.startsWith("/auth")) {
-    const url = new URL("/auth/callback", request.url);
-    url.searchParams.set("code", code);
-    return NextResponse.redirect(url);
-  }
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const { pathname } = request.nextUrl;
 
   // Rutas públicas — no tocar
-  if (pathname.startsWith("/login") || pathname.startsWith("/auth")) {
+  if (pathname.startsWith("/login")) {
     if (user && user.email === ALLOWED_EMAIL && pathname === "/login") {
       return NextResponse.redirect(new URL("/", request.url));
     }
